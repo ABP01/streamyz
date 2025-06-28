@@ -1,6 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:streamyz/views/signup.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:streamyz/views/auth/login.dart';
+import 'package:streamyz/views/auth/signup.dart';
+import 'package:streamyz/views/home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,9 +22,11 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Streamyz',
       theme: ThemeData(
+        primarySwatch: Colors.deepOrange,
+        fontFamily: GoogleFonts.poppins().fontFamily,
         primaryColor: Colors.deepOrangeAccent[700],
       ),
-      home: const Signup(),
+      home: FirebaseAuth.instance.currentUser == null ? LoginPage() : HomePage(),
     );
   }
 }
