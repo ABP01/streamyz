@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "121178153276",
+    "project_id": "streamyz-12c4d",
+    "storage_bucket": "streamyz-12c4d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:121178153276:android:2b17ea20a0acbfa9b63e39",
+        "android_client_info": {
+          "package_name": "com.example.streamyz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANlmuUPrlWCPKzIVa2qGuLCZjtvG7nrcA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
