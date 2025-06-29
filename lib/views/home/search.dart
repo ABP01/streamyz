@@ -11,31 +11,47 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   String? username;
   Future<List<Map<String, dynamic>>>? _searchFuture;
+  Set<String> followedUserIds = {};
   final String currentUserId =
       Supabase.instance.client.auth.currentUser?.id ?? '';
 
-  void _onSearchChanged(String value) {
+  void _onSearchChanged(String value) async {
     setState(() {
-      username = value;
+      username = value.trim();
       if (username != null && username!.length > 2) {
-        _searchFuture = Supabase.instance.client
-            .from('users')
-            .select('id, username, email')
-            .ilike('username', '%$username%');
+        _searchFuture = _searchUsersAndFollows(username!);
       } else {
         _searchFuture = null;
+        followedUserIds = {};
       }
     });
   }
 
-  Future<bool> _isFollowed(String userId) async {
-    final res = await Supabase.instance.client
-        .from('follows')
-        .select('id')
-        .eq('follower_id', currentUserId)
-        .eq('followed_id', userId)
-        .maybeSingle();
-    return res != null;
+  Future<List<Map<String, dynamic>>> _searchUsersAndFollows(
+    String username,
+  ) async {
+    final users = await Supabase.instance.client
+        .from('users')
+        .select('id, username, email')
+        .ilike('username', '%$username%');
+    final userIds = users.map((u) => u['id'] as String).toList();
+    if (userIds.isNotEmpty) {
+      final follows = await Supabase.instance.client
+          .from('follows')
+          .select('followed_id')
+          .eq('follower_id', currentUserId)
+          .inFilter('followed_id', userIds);
+      setState(() {
+        followedUserIds = Set<String>.from(
+          follows.map((f) => f['followed_id'] as String),
+        );
+      });
+    } else {
+      setState(() {
+        followedUserIds = {};
+      });
+    }
+    return List<Map<String, dynamic>>.from(users);
   }
 
   void _toggleFollow(String userId, bool isFollowed) async {
@@ -46,19 +62,22 @@ class _SearchPageState extends State<SearchPage> {
             .delete()
             .eq('follower_id', currentUserId)
             .eq('followed_id', userId);
+        setState(() {
+          followedUserIds.remove(userId);
+        });
       } else {
         await Supabase.instance.client.from('follows').insert({
           'follower_id': currentUserId,
           'followed_id': userId,
         });
-      }
-      if (username != null && username!.length > 2) {
-        setState(() {}); // refresh
+        setState(() {
+          followedUserIds.add(userId);
+        });
       }
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}')));
+      ).showSnackBar(SnackBar(content: Text('Erreur: \\${e.toString()}')));
     }
   }
 
@@ -87,7 +106,7 @@ class _SearchPageState extends State<SearchPage> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {
-                    return Text("Erreur : ${snapshot.error}");
+                    return Text("Erreur : \\${snapshot.error}");
                   }
                   final data = snapshot.data;
                   if (data == null || data.isEmpty) {
@@ -98,27 +117,22 @@ class _SearchPageState extends State<SearchPage> {
                     itemBuilder: (context, index) {
                       final user = data[index];
                       if (user['id'] == currentUserId) {
-                        return const SizedBox.shrink(); // Ne pas afficher soi-même
+                        return const SizedBox.shrink();
                       }
-                      return FutureBuilder<bool>(
-                        future: _isFollowed(user['id']),
-                        builder: (context, followSnap) {
-                          final isFollowed = followSnap.data ?? false;
-                          return ListTile(
-                            title: Text(user['username'] ?? 'Nom inconnu'),
-                            subtitle: Text(user['email'] ?? ''),
-                            trailing: ElevatedButton(
-                              onPressed: () =>
-                                  _toggleFollow(user['id'], isFollowed),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isFollowed
-                                    ? Colors.grey
-                                    : Colors.blue,
-                              ),
-                              child: Text(isFollowed ? 'Abonné' : 'Suivre'),
-                            ),
-                          );
-                        },
+                      final isFollowed = followedUserIds.contains(user['id']);
+                      return ListTile(
+                        title: Text(user['username'] ?? 'Nom inconnu'),
+                        subtitle: Text(user['email'] ?? ''),
+                        trailing: ElevatedButton(
+                          onPressed: () =>
+                              _toggleFollow(user['id'], isFollowed),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isFollowed
+                                ? Colors.grey
+                                : Colors.blue,
+                          ),
+                          child: Text(isFollowed ? 'Abonné' : 'Suivre'),
+                        ),
                       );
                     },
                   );

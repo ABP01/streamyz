@@ -69,10 +69,12 @@ class _SignupState extends State<Signup> {
                 height: 40,
                 child: ElevatedButton(
                   onPressed: () async {
+                    print("Sign up button clicked");
                     if (key.currentState?.validate() ?? false) {
                       final email = _emailController.text.trim();
                       final password = _passwordController.text;
                       final username = _usernameController.text.trim();
+                      print("Form validated: email=$email, username=$username");
                       if (email.isEmpty ||
                           password.isEmpty ||
                           username.isEmpty) {
@@ -84,10 +86,13 @@ class _SignupState extends State<Signup> {
                         return;
                       }
                       try {
+                        print("Attempting to sign up user");
                         final authResponse = await Supabase.instance.client.auth
                             .signUp(email: email, password: password);
                         final user = authResponse.user;
+                        print("Sign up response: user=${user?.id}");
                         if (user != null) {
+                          print("Inserting user data into database");
                           final insertResponse = await Supabase.instance.client
                               .from('users')
                               .insert({
@@ -96,28 +101,12 @@ class _SignupState extends State<Signup> {
                                 'username': username,
                                 'created_at': DateTime.now().toIso8601String(),
                               });
+                          print("Insert response: error=${insertResponse.error}");
                           if (insertResponse.error == null) {
-                            // Tentative de connexion automatique après inscription
-                            final loginResponse = await Supabase
-                                .instance
-                                .client
-                                .auth
-                                .signInWithPassword(
-                                  email: email,
-                                  password: password,
-                                );
-                            if (loginResponse.session != null && mounted) {
+                            if (mounted) {
                               Navigator.of(context).pushReplacement(
                                 MaterialPageRoute(
                                   builder: (_) => const HomePage(),
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Compte créé, veuillez vous connecter.',
-                                  ),
                                 ),
                               );
                             }
@@ -134,10 +123,12 @@ class _SignupState extends State<Signup> {
                           }
                         }
                       } on AuthException catch (e) {
+                        print("AuthException: ${e.message}");
                         ScaffoldMessenger.of(
                           context,
                         ).showSnackBar(SnackBar(content: Text(e.message)));
                       } catch (e) {
+                        print("Unexpected error: $e");
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Une erreur s\'est produite.'),
