@@ -131,7 +131,9 @@ class _SearchPageState extends State<SearchPage> {
                                 ? Colors.grey
                                 : Colors.blue,
                           ),
-                          child: Text(isFollowed ? 'Abonné' : 'Suivre'),
+                          child: Text(isFollowed ? 'Abonné' : 'Suivre',
+                            style: const TextStyle(color: Colors.white ),
+                        ),
                         ),
                       );
                     },
