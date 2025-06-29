@@ -1,6 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:form_validator/form_validator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../home/home_page.dart';
 
 class Signup extends StatefulWidget {
   const Signup({super.key});
@@ -10,11 +12,18 @@ class Signup extends StatefulWidget {
 }
 
 class _SignupState extends State<Signup> {
-  String? email;
-  String? password;
-  String? username;
-
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
   GlobalKey<FormState> key = GlobalKey<FormState>();
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _usernameController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,31 +35,27 @@ class _SignupState extends State<Signup> {
           child: ListView(
             children: [
               TextFormField(
-                decoration: InputDecoration(
+                controller: _usernameController,
+                decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   labelText: "Username",
                 ),
                 validator: ValidationBuilder().maxLength(10).build(),
-                onChanged: (value) {
-                  username = value;
-                },
               ),
-              SizedBox(height: 20),
-
+              const SizedBox(height: 20),
               TextFormField(
-                decoration: InputDecoration(
+                controller: _emailController,
+                decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   labelText: "Email",
                 ),
-                validator: ValidationBuilder().email().maxLength(50).build(),
-                onChanged: (value) {
-                  email = value;
-                },
+                validator: ValidationBuilder().email().build(),
               ),
-
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               TextFormField(
-                decoration: InputDecoration(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   labelText: "Password",
                 ),
@@ -58,34 +63,77 @@ class _SignupState extends State<Signup> {
                     .maxLength(15)
                     .minLength(6)
                     .build(),
-                onChanged: (value) {
-                  password = value;
-                },
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               SizedBox(
                 height: 40,
                 child: ElevatedButton(
                   onPressed: () async {
+                    print("Sign up button clicked");
                     if (key.currentState?.validate() ?? false) {
-                      print(email);
+                      final email = _emailController.text.trim();
+                      final password = _passwordController.text;
+                      final username = _usernameController.text.trim();
+                      print("Form validated: email=$email, username=$username");
+                      if (email.isEmpty ||
+                          password.isEmpty ||
+                          username.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Veuillez remplir tous les champs.'),
+                          ),
+                        );
+                        return;
+                      }
                       try {
-                        await FirebaseAuth.instance
-                            .createUserWithEmailAndPassword(
-                              email: email!,
-                              password: password!,
-                            );
-                        print("User Created");
-                      } on FirebaseAuthException catch (e) {
-                        if (e.code == 'weak-password') {
-                          print('The password provided is too weak.');
-                        } else if (e.code == 'email-already-in-use') {
-                          print('The account already exists for that email.');
-                        } else {
-                          print('Error: \\${e.message}');
+                        print("Attempting to sign up user");
+                        final authResponse = await Supabase.instance.client.auth
+                            .signUp(email: email, password: password);
+                        final user = authResponse.user;
+                        print("Sign up response: user=${user?.id}");
+                        if (user != null) {
+                          print("Inserting user data into database");
+                          final insertResponse = await Supabase.instance.client
+                              .from('users')
+                              .insert({
+                                'id': user.id,
+                                'email': email,
+                                'username': username,
+                                'created_at': DateTime.now().toIso8601String(),
+                              });
+                          print("Insert response: error=${insertResponse.error}");
+                          if (insertResponse.error == null) {
+                            if (mounted) {
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (_) => const HomePage(),
+                                ),
+                              );
+                            }
+                          } else {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Le compte est créé, mais une erreur est survenue lors de l\'enregistrement des données Supabase.',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
                         }
+                      } on AuthException catch (e) {
+                        print("AuthException: ${e.message}");
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(e.message)));
                       } catch (e) {
-                        print("Error: $e");
+                        print("Unexpected error: $e");
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Une erreur s\'est produite.'),
+                          ),
+                        );
                       }
                     }
                   },

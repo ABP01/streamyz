@@ -1,23 +1,25 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:streamyz/views/auth/login.dart';
-import 'package:streamyz/views/auth/signup.dart';
-import 'package:streamyz/views/home_page.dart';
+import 'package:streamyz/views/home/home_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Supabase.initialize(
+    url: 'https://ztrdsbebnvbaqehxjxff.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0cmRzYmVibnZiYXFlaHhqeGZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NzI1MDQsImV4cCI6MjA2NjM0ODUwNH0.6RCSrUi2psCGgJxa_8CWR2PywcF9ZCUdw1qZIo1cEfo',
+  );
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    final session = Supabase.instance.client.auth.currentSession;
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Streamyz',
@@ -26,7 +28,7 @@ class MyApp extends StatelessWidget {
         fontFamily: GoogleFonts.poppins().fontFamily,
         primaryColor: Colors.deepOrangeAccent[700],
       ),
-      home: FirebaseAuth.instance.currentUser == null ? LoginPage() : HomePage(),
+      home: session == null ? LoginPage() : HomePage(),
     );
   }
 }
