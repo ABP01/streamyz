@@ -1,7 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'auth/login.dart';
+import '../auth/login.dart';
+import 'search.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,7 +15,19 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Streamyz')),
+      appBar: AppBar(
+        title: const Text('Streamyz'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (context) => SearchPage()));
+            },
+            icon: Icon(Icons.search),
+          ),
+        ],
+      ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -27,13 +40,13 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             ListTile(
-              leading: Icon(Icons.logout),
+              leading: const Icon(Icons.logout),
               title: const Text('Sign Out'),
               onTap: () async {
-                await FirebaseAuth.instance.signOut();
+                await Supabase.instance.client.auth.signOut();
                 if (mounted) {
                   Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => LoginPage()),
+                    MaterialPageRoute(builder: (context) => const LoginPage()),
                     (route) => false,
                   );
                 }

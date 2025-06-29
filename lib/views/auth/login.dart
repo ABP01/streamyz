@@ -1,9 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:form_validator/form_validator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../home_page.dart';
-import '../signup.dart';
+import '../home/home_page.dart';
+import 'signup.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -20,30 +20,27 @@ class _LoginPageState extends State<LoginPage> {
 
   void _login() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
-
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final response = await Supabase.instance.client.auth.signInWithPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomePage()),
+      if (response.session != null) {
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const HomePage()),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email ou mot de passe incorrect.')),
         );
       }
-    } on FirebaseAuthException catch (e) {
-      String message = switch (e.code) {
-        'user-not-found' => 'Aucun utilisateur trouvé avec cet e-mail.',
-        'wrong-password' => 'Mot de passe incorrect.',
-        _ => 'Erreur : ${e.message}'
-      };
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+    } on AuthException catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Une erreur s\'est produite.')),
@@ -101,7 +98,10 @@ class _LoginPageState extends State<LoginPage> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.lock),
                 ),
-                validator: ValidationBuilder().minLength(6).maxLength(15).build(),
+                validator: ValidationBuilder()
+                    .minLength(6)
+                    .maxLength(15)
+                    .build(),
               ),
               const SizedBox(height: 30),
 
@@ -132,11 +132,14 @@ class _LoginPageState extends State<LoginPage> {
                     },
                     child: const Text(
                       "S'inscrire",
-                      style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
-              )
+              ),
             ],
           ),
         ),
