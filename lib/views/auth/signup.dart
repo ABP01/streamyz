@@ -1,6 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:form_validator/form_validator.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../home/home_page.dart';
 
@@ -86,47 +86,26 @@ class _SignupState extends State<Signup> {
                         return;
                       }
                       try {
-                        print("Attempting to sign up user");
-                        final authResponse = await Supabase.instance.client.auth
-                            .signUp(email: email, password: password);
-                        final user = authResponse.user;
-                        print("Sign up response: user=${user?.id}");
-                        if (user != null) {
-                          print("Inserting user data into database");
-                          final insertResponse = await Supabase.instance.client
-                              .from('users')
-                              .insert({
-                                'id': user.id,
-                                'email': email,
-                                'username': username,
-                                'created_at': DateTime.now().toIso8601String(),
-                              });
-                          print("Insert response: error=${insertResponse.error}");
-                          if (insertResponse.error == null) {
-                            if (mounted) {
-                              Navigator.of(context).pushReplacement(
-                                MaterialPageRoute(
-                                  builder: (_) => const HomePage(),
-                                ),
-                              );
-                            }
-                          } else {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Le compte est créé, mais une erreur est survenue lors de l\'enregistrement des données Supabase.',
-                                  ),
-                                ),
-                              );
-                            }
+                        final userCredential = await FirebaseAuth.instance
+                            .createUserWithEmailAndPassword(
+                              email: email,
+                              password: password,
+                            );
+                        if (userCredential.user != null) {
+                          if (mounted) {
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder: (_) => const HomePage(),
+                              ),
+                            );
                           }
                         }
-                      } on AuthException catch (e) {
-                        print("AuthException: ${e.message}");
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text(e.message)));
+                      } on FirebaseAuthException catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(e.message ?? 'Erreur inconnue.'),
+                          ),
+                        );
                       } catch (e) {
                         print("Unexpected error: $e");
                         ScaffoldMessenger.of(context).showSnackBar(

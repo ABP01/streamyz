@@ -1,6 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:form_validator/form_validator.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../home/home_page.dart';
 import 'signup.dart';
@@ -22,11 +22,12 @@ class _LoginPageState extends State<LoginPage> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      final response = await Supabase.instance.client.auth.signInWithPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
-      if (response.session != null) {
+      final userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
+      if (userCredential.user != null) {
         if (mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const HomePage()),
@@ -37,16 +38,12 @@ class _LoginPageState extends State<LoginPage> {
           const SnackBar(content: Text('Email ou mot de passe incorrect.')),
         );
       }
-    } on AuthException catch (e) {
+    } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Une erreur s\'est produite.')),
-      );
+      ).showSnackBar(SnackBar(content: Text(e.message ?? 'Erreur inconnue.')));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
     }
   }
 
