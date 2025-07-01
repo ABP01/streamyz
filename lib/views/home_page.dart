@@ -1,5 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'auth/login.dart';
 
@@ -30,7 +30,7 @@ class _HomePageState extends State<HomePage> {
               leading: const Icon(Icons.logout),
               title: const Text('Sign Out'),
               onTap: () async {
-                await Supabase.instance.client.auth.signOut();
+                await FirebaseAuth.instance.signOut();
                 if (mounted) {
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (context) => const LoginPage()),

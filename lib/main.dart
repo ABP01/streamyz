@@ -23,11 +23,53 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Streamyz',
       theme: ThemeData(
-        primarySwatch: Colors.deepOrange,
+        primaryColor: Colors.orange,
+        scaffoldBackgroundColor: Colors.white,
         fontFamily: GoogleFonts.poppins().fontFamily,
-        primaryColor: Colors.deepOrangeAccent[700],
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.orange,
+          primary: Colors.orange,
+          secondary: const Color(0xFF11206C),
+          background: Colors.white,
+          onPrimary: Colors.white,
+          onSecondary: Colors.orange,
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: const Color(0xFF11206C),
+          foregroundColor: Colors.white,
+          elevation: 0.5,
+          titleTextStyle: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.orange,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            textStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF11206C), width: 1.2),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.orange, width: 2),
+          ),
+          labelStyle: const TextStyle(color: Color(0xFF11206C)),
+        ),
       ),
-      home: user == null ? LoginPage() : HomePage(),
+      home: user == null ? const LoginPage() : const HomePage(),
     );
   }
+
 }
