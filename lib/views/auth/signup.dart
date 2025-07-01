@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:form_validator/form_validator.dart';
@@ -92,7 +93,25 @@ class _SignupState extends State<Signup> {
                               password: password,
                             );
                         if (userCredential.user != null) {
+                          // Save user information to Firestore
+                          await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(userCredential.user!.uid)
+                              .set({
+                                'uid': userCredential.user!.uid,
+                                'email': email,
+                                'username': username,
+                                'username_lowercase': username.toLowerCase(),
+                              });
+
                           if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Compte créé avec succès !'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                            await Future.delayed(const Duration(seconds: 1));
                             Navigator.of(context).pushReplacement(
                               MaterialPageRoute(
                                 builder: (_) => const HomePage(),

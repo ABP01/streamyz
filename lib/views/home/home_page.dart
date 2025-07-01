@@ -68,20 +68,45 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: postext,
-                    decoration: InputDecoration(
-                      labelText: "What's on your mind?",
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextFormField(
+                      controller: postext,
+                      decoration: InputDecoration(
+                        labelText: "Qu'avez-vous en tête ?",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        prefixIcon: Icon(Icons.edit),
+                      ),
+                      minLines: 1,
+                      maxLines: 3,
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      ElevatedButton(
+                    const SizedBox(height: 14),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                        ),
                         onPressed: () async {
                           if (postext.text.trim().isEmpty) return;
 
@@ -114,11 +139,15 @@ class _HomePageState extends State<HomePage> {
 
                           setState(() {});
                         },
-                        child: Text("Post"),
+                        icon: Icon(Icons.send),
+                        label: Text(
+                          "Publier",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
             Expanded(
@@ -146,11 +175,14 @@ class _HomePageState extends State<HomePage> {
                       itemCount: data.length,
                       itemBuilder: (context, index) {
                         final post = data[index].data() as Map<String, dynamic>;
+                        final timeField = post['time'];
+                        final formattedTime = timeField is Timestamp
+                            ? timeField.toDate().toString()
+                            : timeField.toString();
+
                         return ListTile(
                           title: Text(post['content'] ?? ""),
-                          subtitle: Text(
-                            post['time']?.toDate().toString() ?? "",
-                          ),
+                          subtitle: Text(formattedTime),
                         );
                       },
                     );

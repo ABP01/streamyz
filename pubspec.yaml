@@ -39,7 +39,6 @@ dependencies:
   google_fonts: ^6.2.1
   form_validator: ^2.1.1
   cloud_firestore: ^5.6.9
-  supabase_flutter: ^2.3.4
 
 dev_dependencies:
   flutter_test:

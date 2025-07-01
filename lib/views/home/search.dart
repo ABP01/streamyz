@@ -1,5 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -12,8 +13,7 @@ class _SearchPageState extends State<SearchPage> {
   String? username;
   Future<List<Map<String, dynamic>>>? _searchFuture;
   Set<String> followedUserIds = {};
-  final String currentUserId =
-      Supabase.instance.client.auth.currentUser?.id ?? '';
+  final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   void _onSearchChanged(String value) async {
     setState(() {
@@ -30,43 +30,58 @@ class _SearchPageState extends State<SearchPage> {
   Future<List<Map<String, dynamic>>> _searchUsersAndFollows(
     String username,
   ) async {
-    final users = await Supabase.instance.client
-        .from('users')
-        .select('id, username, email')
-        .ilike('username', '%$username%');
-    final userIds = users.map((u) => u['id'] as String).toList();
+    final users = await FirebaseFirestore.instance
+        .collection('users')
+        .where(
+          'username_lowercase',
+          isGreaterThanOrEqualTo: username.toLowerCase(),
+        )
+        .where(
+          'username_lowercase',
+          isLessThanOrEqualTo: username.toLowerCase() + '\uf8ff',
+        )
+        .get();
+
+    final filteredUsers = users.docs
+        .where((doc) => doc.id != currentUserId)
+        .toList();
+
+    final userIds = filteredUsers.map((u) => u.id).toList();
     if (userIds.isNotEmpty) {
-      final follows = await Supabase.instance.client
-          .from('follows')
-          .select('followed_id')
-          .eq('follower_id', currentUserId)
-          .inFilter('followed_id', userIds);
+      final follows = await FirebaseFirestore.instance
+          .collection('follows')
+          .where('follower_id', isEqualTo: currentUserId)
+          .where('followed_id', whereIn: userIds)
+          .get();
       setState(() {
-        followedUserIds = Set<String>.from(
-          follows.map((f) => f['followed_id'] as String),
-        );
+        followedUserIds = Set<String>.from(follows.docs.map((f) => f.id));
       });
     } else {
       setState(() {
         followedUserIds = {};
       });
     }
-    return List<Map<String, dynamic>>.from(users);
+    return filteredUsers.map((doc) => doc.data()).toList();
   }
 
   void _toggleFollow(String userId, bool isFollowed) async {
     try {
       if (isFollowed) {
-        await Supabase.instance.client
-            .from('follows')
-            .delete()
-            .eq('follower_id', currentUserId)
-            .eq('followed_id', userId);
+        await FirebaseFirestore.instance
+            .collection('follows')
+            .where('follower_id', isEqualTo: currentUserId)
+            .where('followed_id', isEqualTo: userId)
+            .get()
+            .then((snapshot) {
+              for (var doc in snapshot.docs) {
+                doc.reference.delete();
+              }
+            });
         setState(() {
           followedUserIds.remove(userId);
         });
       } else {
-        await Supabase.instance.client.from('follows').insert({
+        await FirebaseFirestore.instance.collection('follows').add({
           'follower_id': currentUserId,
           'followed_id': userId,
         });
@@ -77,7 +92,7 @@ class _SearchPageState extends State<SearchPage> {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Erreur: \\${e.toString()}')));
+      ).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}')));
     }
   }
 
@@ -126,14 +141,10 @@ class _SearchPageState extends State<SearchPage> {
                         trailing: ElevatedButton(
                           onPressed: () =>
                               _toggleFollow(user['id'], isFollowed),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isFollowed
-                                ? Colors.grey
-                                : Colors.blue,
+                          child: Text(
+                            isFollowed ? 'Abonné' : 'Suivre',
+                            style: const TextStyle(color: Colors.white),
                           ),
-                          child: Text(isFollowed ? 'Abonné' : 'Suivre',
-                            style: const TextStyle(color: Colors.white ),
-                        ),
                         ),
                       );
                     },
