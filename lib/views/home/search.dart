@@ -131,16 +131,21 @@ class _SearchPageState extends State<SearchPage> {
                     itemCount: data.length,
                     itemBuilder: (context, index) {
                       final user = data[index];
-                      if (user['id'] == currentUserId) {
+                      final userId = user['uid'] ?? user['id'];
+                      if (userId == null || userId == currentUserId) {
                         return const SizedBox.shrink();
                       }
-                      final isFollowed = followedUserIds.contains(user['id']);
+                      final isFollowed = followedUserIds.contains(userId);
                       return ListTile(
                         title: Text(user['username'] ?? 'Nom inconnu'),
-                        subtitle: Text(user['email'] ?? ''),
+                        subtitle: Text(user['email'] ?? 'Email inconnu'),
                         trailing: ElevatedButton(
-                          onPressed: () =>
-                              _toggleFollow(user['id'], isFollowed),
+                          onPressed: () => _toggleFollow(userId, isFollowed),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isFollowed
+                                ? Colors.grey
+                                : Colors.blue,
+                          ),
                           child: Text(
                             isFollowed ? 'Abonné' : 'Suivre',
                             style: const TextStyle(color: Colors.white),
