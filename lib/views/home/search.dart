@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:streamyz/views/home/chat_list.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -137,6 +138,16 @@ class _SearchPageState extends State<SearchPage> {
                       }
                       final isFollowed = followedUserIds.contains(userId);
                       return ListTile(
+                        leading: IconButton(
+                          icon: Icon(Icons.chat),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => ChatList(),
+                              ),
+                            );
+                          },
+                        ),
                         title: Text(user['username'] ?? 'Nom inconnu'),
                         subtitle: Text(user['email'] ?? 'Email inconnu'),
                         trailing: ElevatedButton(
