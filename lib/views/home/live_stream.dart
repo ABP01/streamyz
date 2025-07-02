@@ -17,38 +17,40 @@ class _LiveStreamBasePageState extends State<LiveStreamBasePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
-      body: Column(
-        children: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => ZegoLiveStream(
-                    uid: '111111',
-                    userName: 'Start',
-                    liveID: 'live111',
+      body: Center(
+        child: Column(
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ZegoLiveStream(
+                      uid: '111111',
+                      userName: 'Start',
+                      liveID: 'live111',
+                    ),
                   ),
-                ),
-              );
-            },
-            child: const Text("Démarrer le live"),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => ZegoLiveStream(
-                    uid: '222222',
-                    userName: 'Joiner',
-                    liveID: 'live111',
+                );
+              },
+              child: const Text("Démarrer le live"),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ZegoLiveStream(
+                      uid: '222222',
+                      userName: 'Joiner',
+                      liveID: 'live111',
+                    ),
                   ),
-                ),
-              );
-            },
-            child: const Text("Rejoindre un live"),
-          ),
-        ],
+                );
+              },
+              child: const Text("Rejoindre un live"),
+            ),
+          ],
+        ),
       ),
     );
   }
