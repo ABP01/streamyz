@@ -1,31 +1,19 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:zego_zim/zego_zim.dart';
+// import 'package:zego_zim/zego_zim.dart';
 
 import 'views/home/home_page.dart';
 
 Future<void> main() async {
+  var appID = 646767905;
+  var appSign = "e344270b3a92a09da043bb179a9642f3827bd0d35d6caf4553fa22d4a8419e26";
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  initZegoCloud();
   runApp(const MyApp());
 }
 
-void initZegoCloud() {
-  final appConfig = ZIMAppConfig()
-    ..appID = 646767905
-    ..appSign =
-        'e344270b3a92a09da043bb179a9642f3827bd0d35d6caf4553fa22d4a8419e26';
-  ZIM.create(appConfig);
-}
-
-// Corrected the ZIM login method to use the proper arguments and removed unused variables.
-Future<void> connectZegoUser(String userID, String userName) async {
-  ZIMLoginConfig loginConfig = ZIMLoginConfig();
-  ZIM.getInstance()!.login(userID, loginConfig);
-  debugPrint('ZEGOCLOUD login success');
-}
+// Suppression de l'initialisation et de la connexion ZEGOCLOUD
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -55,9 +43,7 @@ class RootPage extends StatelessWidget {
           );
         }
         if (snapshot.hasData && snapshot.data != null) {
-          // Connexion ZEGOCLOUD à chaque login Firebase
-          final user = snapshot.data!;
-          connectZegoUser(user.uid, user.displayName ?? user.email ?? user.uid);
+          // Redirection vers la page d'accueil après connexion Firebase
           return const HomePage();
         } else {
           // Redirige vers la page de login si besoin
