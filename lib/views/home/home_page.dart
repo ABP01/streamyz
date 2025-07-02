@@ -1,11 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-// import 'package:zego_uikit_prebuilt_live_streaming/zego_uikit_prebuilt_live_streaming.dart';
 
 import '../auth/login.dart';
 import 'chat.dart';
-import 'live_stream.dart';
 import 'profile.dart';
 import 'search.dart';
 
@@ -218,15 +216,7 @@ class _HomePageState extends State<HomePage> {
         children: [
           _buildPostSection(),
           ChatPage(),
-          // Section Live Streaming supprimée : la fonctionnalité de live n'est plus disponible.
-          // Center(
-          //   child: Text(
-          //     'La fonctionnalité de live streaming n\'est plus disponible.',
-          //     style: TextStyle(fontSize: 16, color: Colors.grey),
-          //     textAlign: TextAlign.center,
-          //   ),
-          // ),
-          LiveStreamBasePage(), // Placeholder for live streaming
+          Center(child: Text('Section Live (à implémenter)')),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
