@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:streamyz/views/home/live_stream.dart';
 
 import '../auth/login.dart';
 import 'chat.dart';
@@ -216,7 +217,7 @@ class _HomePageState extends State<HomePage> {
         children: [
           _buildPostSection(),
           ChatPage(),
-          Center(child: Text('Section Live (à implémenter)')),
+          LiveStreamBasePage()
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

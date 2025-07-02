@@ -1,9 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:streamyz/views/home/home_page.dart';
 import 'package:zego_zim/zego_zim.dart';
 
-import 'views/home/home_page.dart';
+import 'views/auth/login.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,7 +37,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Streamyz',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const RootPage(),
+      home: const LoginPage(), // Set LoginPage as the initial screen
     );
   }
 }

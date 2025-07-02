@@ -45,7 +45,8 @@ dependencies:
   # ZEGOCLOUD dependencies
   zego_zim: ^2.20.0+2
   zego_uikit_prebuilt_call: ^4.7.0
-  zego_uikit_prebuilt_live_streaming: ^2.7.0
+  #zego_uikit_prebuilt_live_streaming: ^2.7.0
+  zego_uikit_prebuilt_live_streaming: ^3.14.1
 
 dev_dependencies:
   flutter_test:

@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 
 import 'auth/login.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class DrawerScreen extends StatefulWidget {
+  const DrawerScreen({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State< DrawerScreen > createState() => _DrawerScreenState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _DrawerScreenState extends State<DrawerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
