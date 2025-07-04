@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:streamyz/views/home/profile.dart';
+import 'package:streamyz/views/home/live_stream.dart';
 
 class ChatPage extends StatelessWidget {
   const ChatPage({super.key});
@@ -82,8 +84,26 @@ class ChatPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: () {
-              // Add search functionality here
+            onPressed: () async {
+              final userId = await showDialog<String>(
+                context: context,
+                builder: (context) => const UserSearchDialog(),
+              );
+              debugPrint('UserSearchDialog returned userId: $userId');
+              if (userId != null && userId.trim().isNotEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProfilePage(userId: userId.trim()),
+                  ),
+                );
+              } else {
+                if (userId == null) {
+                  debugPrint('Aucun utilisateur sélectionné dans la recherche.');
+                } else {
+                  debugPrint('userId vide ou invalide: "$userId"');
+                }
+              }
             },
           ),
         ],
@@ -232,6 +252,84 @@ class ChatPage extends StatelessWidget {
         child: const Icon(Icons.group),
         tooltip: 'Abonnés mutuels',
       ),
+    );
+  }
+}
+
+// Dialog de recherche d'utilisateur par username/email
+class UserSearchDialog extends StatefulWidget {
+  const UserSearchDialog({Key? key}) : super(key: key);
+
+  @override
+  State<UserSearchDialog> createState() => _UserSearchDialogState();
+}
+
+class _UserSearchDialogState extends State<UserSearchDialog> {
+  final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _results = [];
+  bool _loading = false;
+
+  void _search() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) return;
+    setState(() => _loading = true);
+    final snap = await FirebaseFirestore.instance
+        .collection('users')
+        .where('username_lowercase', isEqualTo: query.toLowerCase())
+        .get();
+    setState(() {
+      _results = snap.docs.map((d) => {'id': d.id, ...d.data()}).toList();
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Rechercher un utilisateur'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _searchController,
+            decoration: const InputDecoration(
+              labelText: 'Nom d\'utilisateur',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (_) => _search(),
+          ),
+          const SizedBox(height: 10),
+          _loading
+              ? const CircularProgressIndicator()
+              : _results.isEmpty
+                  ? const SizedBox.shrink()
+                  : SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        itemCount: _results.length,
+                        itemBuilder: (context, index) {
+                          final user = _results[index];
+                          return ListTile(
+                            leading: const CircleAvatar(child: Icon(Icons.person)),
+                            title: Text(user['username'] ?? user['id']),
+                            subtitle: Text(user['email'] ?? ''),
+                            onTap: () => Navigator.pop(context, user['id']),
+                          );
+                        },
+                      ),
+                    ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Annuler'),
+        ),
+        TextButton(
+          onPressed: _search,
+          child: const Text('Rechercher'),
+        ),
+      ],
     );
   }
 }
@@ -392,6 +490,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         final avatarUrl = userData?['avatarUrl'] as String?;
         final username =
             userData?['username'] ?? userData?['displayName'] ?? widget.userId;
+        // Ajout d'un bouton pour rejoindre le live de l'utilisateur si il est en live
+        final isLive = userData?['isLive'] == true;
         return Scaffold(
           appBar: AppBar(
             title: Row(
@@ -404,6 +504,38 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                   username,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
+                if (isLive)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.live_tv, size: 18),
+                      label: const Text('Live', style: TextStyle(fontSize: 13)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () {
+                        final currentUser = FirebaseAuth.instance.currentUser;
+                        final uid = currentUser?.uid ?? '';
+                        final myName = currentUser?.displayName ?? currentUser?.email ?? uid;
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => ZegoLiveStream(
+                              uid: uid,
+                              userName: myName,
+                              liveID: 'live_${widget.userId}',
+                              isHost: false,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
               ],
             ),
           ),

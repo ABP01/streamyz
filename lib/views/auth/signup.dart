@@ -93,6 +93,14 @@ class _SignupState extends State<Signup> {
                               password: password,
                             );
                         if (userCredential.user != null) {
+                          // Supprimer les anciens comptes avec le même email
+                          final querySnapshot = await FirebaseFirestore.instance
+                              .collection('users')
+                              .where('email', isEqualTo: email)
+                              .get();
+                          for (var doc in querySnapshot.docs) {
+                            await doc.reference.delete();
+                          }
                           // Save user information to Firestore
                           await FirebaseFirestore.instance
                               .collection('users')

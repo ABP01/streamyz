@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:streamyz/views/home/live_stream.dart';
 
 class ProfilePage extends StatelessWidget {
   final String userId;
@@ -34,6 +36,60 @@ class ProfilePage extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              if (user['isLive'] == true) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      'EN LIVE',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.live_tv),
+                    label: const Text('Rejoindre le live'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    onPressed: () {
+                      // Récupère l'utilisateur courant pour passer son uid/userName
+                      final currentUser = FirebaseAuth.instance.currentUser;
+                      final uid = currentUser?.uid ?? '';
+                      final userName =
+                          currentUser?.displayName ?? currentUser?.email ?? uid;
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => ZegoLiveStream(
+                            uid: uid,
+                            userName: userName,
+                            liveID: 'live_${userId}',
+                            isHost: false,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
               Text(user['email'] ?? '', style: const TextStyle(fontSize: 16)),
               const SizedBox(height: 20),
               Expanded(child: FollowersList(userId: userId)),
