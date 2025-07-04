@@ -61,7 +61,8 @@ class _LiveStreamBasePageState extends State<LiveStreamBasePage> {
 
   @override
   Widget build(BuildContext context) {
-    final liveID = "1234";
+    final userId = _userId ?? 'user';
+    final liveID = "live_" + userId;
     final streamUrl =
         'https://webliveroom-demo.zegocloud.com?app_id=$appID&stream_id=$liveID';
 
@@ -69,7 +70,6 @@ class _LiveStreamBasePageState extends State<LiveStreamBasePage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final userId = _userId ?? 'user';
     final userName = _userName ?? 'Utilisateur';
 
     return Scaffold(
@@ -342,6 +342,28 @@ class ZegoLiveStream extends StatefulWidget {
 }
 
 class _ZegoLiveStreamState extends State<ZegoLiveStream> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isHost) {
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.uid)
+          .update({'isLive': true});
+    }
+  }
+
+  @override
+  void dispose() {
+    if (widget.isHost) {
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.uid)
+          .update({'isLive': false});
+    }
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ZegoUIKitPrebuiltLiveStreaming(
