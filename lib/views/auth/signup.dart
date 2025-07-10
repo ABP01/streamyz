@@ -101,7 +101,7 @@ class _SignupState extends State<Signup> {
                           for (var doc in querySnapshot.docs) {
                             await doc.reference.delete();
                           }
-                          // Save user information to Firestore
+                          // Save user information to Firestore with live features
                           await FirebaseFirestore.instance
                               .collection('users')
                               .doc(userCredential.user!.uid)
@@ -110,6 +110,16 @@ class _SignupState extends State<Signup> {
                                 'email': email,
                                 'username': username,
                                 'username_lowercase': username.toLowerCase(),
+                                // Champs pour les fonctionnalités live
+                                'isLive': false,
+                                'liveStats': {
+                                  'totalGifts': 0,
+                                  'totalGiftValue': 0,
+                                  'totalViewers': 0,
+                                  'lastGiftReceived': null,
+                                },
+                                'liveStartTime': null,
+                                'liveEndTime': null,
                               });
 
                           if (mounted) {

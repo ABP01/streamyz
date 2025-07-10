@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:zego_uikit_prebuilt_live_streaming/zego_uikit_prebuilt_live_streaming.dart';
 
+import '../../services/live_service.dart';
+
 const int appID = 1145966523;
 const String appSign =
     "718e87c3fe2843726ed28a6dd25197aac29eb8016d442cc84151c07b65e95d2d";
@@ -259,7 +261,10 @@ class _LiveStreamBasePageState extends State<LiveStreamBasePage> {
                     // Récupérer l'utilisateur connecté (spectateur)
                     final currentUser = FirebaseAuth.instance.currentUser;
                     final currentUserId = currentUser?.uid ?? 'user';
-                    final currentUserName = currentUser?.displayName ?? currentUser?.email ?? currentUserId;
+                    final currentUserName =
+                        currentUser?.displayName ??
+                        currentUser?.email ??
+                        currentUserId;
                     return ListTile(
                       leading: const Icon(Icons.live_tv, color: Colors.red),
                       title: Text(hostName),
@@ -355,20 +360,16 @@ class _ZegoLiveStreamState extends State<ZegoLiveStream> {
   void initState() {
     super.initState();
     if (widget.isHost) {
-      FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.uid)
-          .update({'isLive': true});
+      LiveService.startLive(widget.uid);
     }
   }
 
   @override
   void dispose() {
     if (widget.isHost) {
-      FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.uid)
-          .update({'isLive': false});
+      LiveService.stopLive(widget.uid);
+      // Optionnel: nettoyer les données du live
+      LiveService.cleanupLiveData(widget.liveID);
     }
     super.dispose();
   }

@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:streamyz/services/firebase_setup.dart';
+import 'package:streamyz/views/demo/live_demo_menu.dart';
+import 'package:streamyz/views/home/live_feed.dart';
 import 'package:streamyz/views/home/live_stream.dart';
 
 import '../auth/login.dart';
@@ -18,6 +21,29 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final TextEditingController postext = TextEditingController();
   int _selectedIndex = 0;
+  bool _isFirstLaunch = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAndInitializeFirebase();
+  }
+
+  Future<void> _checkAndInitializeFirebase() async {
+    if (_isFirstLaunch) {
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          await FirebaseSetup.initializeUserLiveStats(user.uid);
+        }
+      } catch (e) {
+        print('Erreur lors de l\'initialisation Firebase: $e');
+      }
+      setState(() {
+        _isFirstLaunch = false;
+      });
+    }
+  }
 
   Widget _buildPostSection() {
     return Padding(
@@ -217,10 +243,12 @@ class _HomePageState extends State<HomePage> {
         children: [
           _buildPostSection(),
           ChatPage(),
-          LiveStreamBasePage()
+          LiveStreamBasePage(),
+          LiveFeedPage(), // Interface immersive
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         onTap: (index) {
           setState(() {
@@ -231,8 +259,26 @@ class _HomePageState extends State<HomePage> {
           BottomNavigationBarItem(icon: Icon(Icons.article), label: 'Post'),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
           BottomNavigationBarItem(icon: Icon(Icons.live_tv), label: 'Live'),
+          BottomNavigationBarItem(icon: Icon(Icons.explore), label: 'Explore'),
         ],
       ),
+      floatingActionButton: _selectedIndex == 0
+          ? FloatingActionButton.extended(
+              heroTag: "home_live_fab",
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LiveDemoMenuPage(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.live_tv),
+              label: const Text('Lives'),
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            )
+          : null,
     );
   }
 }

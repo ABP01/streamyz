@@ -3,8 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
-import 'package:streamyz/views/home/profile.dart';
 import 'package:streamyz/views/home/live_stream.dart';
+import 'package:streamyz/views/home/profile.dart';
 
 class ChatPage extends StatelessWidget {
   const ChatPage({super.key});
@@ -18,11 +18,26 @@ class ChatPage extends StatelessWidget {
     final combinedStream = FirebaseFirestore.instance
         .collection('conversations')
         .where('participants', arrayContains: currentUserId)
-        .orderBy('updatedAt', descending: true)
+        // Temporarily remove orderBy to avoid index requirement
         .snapshots();
 
     return combinedStream.map((snapshot) {
-      return snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
+      // Sort in memory instead
+      final docs = snapshot.docs
+          .map((doc) => {'id': doc.id, ...doc.data()})
+          .toList();
+
+      // Sort by updatedAt in descending order
+      docs.sort((a, b) {
+        final aTime = a['updatedAt'] as Timestamp?;
+        final bTime = b['updatedAt'] as Timestamp?;
+        if (aTime == null && bTime == null) return 0;
+        if (aTime == null) return 1;
+        if (bTime == null) return -1;
+        return bTime.compareTo(aTime); // Descending order
+      });
+
+      return docs;
     });
   }
 
@@ -99,7 +114,9 @@ class ChatPage extends StatelessWidget {
                 );
               } else {
                 if (userId == null) {
-                  debugPrint('Aucun utilisateur sélectionné dans la recherche.');
+                  debugPrint(
+                    'Aucun utilisateur sélectionné dans la recherche.',
+                  );
                 } else {
                   debugPrint('userId vide ou invalide: "$userId"');
                 }
@@ -234,6 +251,7 @@ class ChatPage extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: "chat_detail_fab",
         onPressed: () async {
           final userId = await showDialog<String>(
             context: context,
@@ -302,22 +320,22 @@ class _UserSearchDialogState extends State<UserSearchDialog> {
           _loading
               ? const CircularProgressIndicator()
               : _results.isEmpty
-                  ? const SizedBox.shrink()
-                  : SizedBox(
-                      height: 200,
-                      child: ListView.builder(
-                        itemCount: _results.length,
-                        itemBuilder: (context, index) {
-                          final user = _results[index];
-                          return ListTile(
-                            leading: const CircleAvatar(child: Icon(Icons.person)),
-                            title: Text(user['username'] ?? user['id']),
-                            subtitle: Text(user['email'] ?? ''),
-                            onTap: () => Navigator.pop(context, user['id']),
-                          );
-                        },
-                      ),
-                    ),
+              ? const SizedBox.shrink()
+              : SizedBox(
+                  height: 200,
+                  child: ListView.builder(
+                    itemCount: _results.length,
+                    itemBuilder: (context, index) {
+                      final user = _results[index];
+                      return ListTile(
+                        leading: const CircleAvatar(child: Icon(Icons.person)),
+                        title: Text(user['username'] ?? user['id']),
+                        subtitle: Text(user['email'] ?? ''),
+                        onTap: () => Navigator.pop(context, user['id']),
+                      );
+                    },
+                  ),
+                ),
         ],
       ),
       actions: [
@@ -325,10 +343,7 @@ class _UserSearchDialogState extends State<UserSearchDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Annuler'),
         ),
-        TextButton(
-          onPressed: _search,
-          child: const Text('Rechercher'),
-        ),
+        TextButton(onPressed: _search, child: const Text('Rechercher')),
       ],
     );
   }
@@ -513,7 +528,10 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -522,7 +540,10 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                       onPressed: () {
                         final currentUser = FirebaseAuth.instance.currentUser;
                         final uid = currentUser?.uid ?? '';
-                        final myName = currentUser?.displayName ?? currentUser?.email ?? uid;
+                        final myName =
+                            currentUser?.displayName ??
+                            currentUser?.email ??
+                            uid;
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => ZegoLiveStream(
