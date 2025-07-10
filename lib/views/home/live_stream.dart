@@ -252,21 +252,30 @@ class _LiveStreamBasePageState extends State<LiveStreamBasePage> {
                   separatorBuilder: (context, index) => const Divider(),
                   itemBuilder: (context, index) {
                     final user = users[index].data() as Map<String, dynamic>;
-                    final userId = users[index].id;
-                    final userName =
-                        user['username'] ?? user['displayName'] ?? userId;
-                    final liveID = 'live_$userId';
+                    final hostId = users[index].id;
+                    final hostName =
+                        user['username'] ?? user['displayName'] ?? hostId;
+                    final liveID = 'live_$hostId';
+                    // Récupérer l'utilisateur connecté (spectateur)
+                    final currentUser = FirebaseAuth.instance.currentUser;
+                    final currentUserId = currentUser?.uid ?? 'user';
+                    final currentUserName = currentUser?.displayName ?? currentUser?.email ?? currentUserId;
                     return ListTile(
                       leading: const Icon(Icons.live_tv, color: Colors.red),
-                      title: Text(userName),
+                      title: Text(hostName),
                       subtitle: Text('ID: $liveID'),
                       trailing: ElevatedButton(
                         onPressed: () {
+                          debugPrint("Host ID: $hostId");
+                          debugPrint("Live Id: $liveID");
+                          debugPrint("Spectator ID: $currentUserId");
+                          debugPrint("Spectator Name: $currentUserName");
+
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => ZegoLiveStream(
-                                uid: userId,
-                                userName: userName,
+                                uid: currentUserId,
+                                userName: currentUserName,
                                 liveID: liveID,
                                 isHost: false,
                               ),
