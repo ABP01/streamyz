@@ -14,6 +14,7 @@ class LiveWelcomePage extends StatelessWidget {
           children: [
             Expanded(
               child: PageView(
+                scrollDirection: Axis.vertical,
                 children: [
                   _buildWelcomeSlide(
                     icon: Icons.swipe_vertical,

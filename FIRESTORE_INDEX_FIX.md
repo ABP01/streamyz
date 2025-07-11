@@ -41,6 +41,35 @@ If the links don't work, create the indexes manually in Firebase Console:
   - `updatedAt` (Descending)
   - `__name__` (Descending)
 
+## Issue
+The following Firestore query requires an index:
+
+```javascript
+Query(gifts where liveID==live_<liveID> order by -timestamp, -__name__);
+```
+
+## Solution
+To resolve this issue, create the required index in Firestore:
+
+1. Open the Firebase Console.
+2. Navigate to the Firestore Database section.
+3. Click on "Indexes" in the left-hand menu.
+4. Click "Create Index".
+5. Configure the index as follows:
+   - **Collection**: `gifts`
+   - **Fields**:
+     - `liveID`: Ascending
+     - `timestamp`: Descending
+     - `__name__`: Descending
+6. Save the index.
+
+Alternatively, use the following direct link to create the index:
+[Create Firestore Index](https://console.firebase.google.com/v1/r/project/streamyz-12c4d/firestore/indexes?create_composite=Ckxwcm9qZWN0cy9zdHJlYW15ei0xMmM0ZC9kYXRhYmFzZXMvKGRlZmF1bHQpL2NvbGxlY3Rpb25Hcm91cHMvZ2lmdHMvaW5kZXhlcy9fEAEaCgoGbGl2ZUlEEAEaDQoJdGltZXN0YW1wEAIaDAoIX19uYW1lX18QAg).
+
+## Notes
+- Ensure the Firestore rules allow access to the `gifts` collection.
+- Test the query after creating the index to confirm the issue is resolved.
+
 ## Solution 2: Temporary Query Modifications (Quick Fix)
 
 If you need immediate functionality while indexes are being built, you can temporarily modify the queries to avoid the composite index requirement:
