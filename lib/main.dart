@@ -1,11 +1,10 @@
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'settings_screen.dart';
 import 'auth_screen.dart';
+import 'settings_screen.dart';
 
 // Home Screen
 class HomeScreen extends StatefulWidget {
@@ -118,7 +117,10 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 12),
               Expanded(
                 child: StreamBuilder(
-                  stream: FirebaseFirestore.instance.collection('lives').orderBy('livestarttime', descending: true).snapshots(),
+                  stream: FirebaseFirestore.instance
+                      .collection('lives')
+                      .orderBy('livestarttime', descending: true)
+                      .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
@@ -142,7 +144,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             title: Text(data['desc'] ?? 'Live'),
                             subtitle: Text(data['name_host'] ?? ''),
-                            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                            trailing: const Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                            ),
                             onTap: () {},
                           ),
                         );
@@ -260,7 +265,10 @@ class ExplorerScreen extends StatelessWidget {
             const SizedBox(height: 16),
             Expanded(
               child: StreamBuilder(
-                stream: FirebaseFirestore.instance.collection('lives').where('is_live', isEqualTo: true).snapshots(),
+                stream: FirebaseFirestore.instance
+                    .collection('lives')
+                    .where('is_live', isEqualTo: true)
+                    .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -306,7 +314,8 @@ class ExplorerScreen extends StatelessWidget {
                                     vertical: 12,
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         data['desc'] ?? 'Live',
@@ -318,7 +327,9 @@ class ExplorerScreen extends StatelessWidget {
                                       const SizedBox(height: 4),
                                       Text(
                                         'par ${data['name_host'] ?? ''}',
-                                        style: const TextStyle(color: Colors.grey),
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                        ),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
@@ -375,7 +386,10 @@ class ProfileScreen extends StatelessWidget {
       body: user == null
           ? const Center(child: Text('Non connecté'))
           : StreamBuilder(
-              stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user.uid)
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -393,12 +407,19 @@ class ProfileScreen extends StatelessWidget {
                       CircleAvatar(
                         radius: 48,
                         backgroundColor: Colors.deepPurple,
-                        child: const Icon(Icons.person, size: 48, color: Colors.white),
+                        child: const Icon(
+                          Icons.person,
+                          size: 48,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Text(
                         data['username'] ?? 'Nom d\'utilisateur',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(data['bio'] ?? 'Bio de l\'utilisateur...'),
@@ -410,7 +431,9 @@ class ProfileScreen extends StatelessWidget {
                             children: [
                               Text(
                                 (data['lives_count'] ?? 0).toString(),
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const Text('Lives'),
                             ],
@@ -418,8 +441,13 @@ class ProfileScreen extends StatelessWidget {
                           Column(
                             children: [
                               Text(
-                                (data['followers'] != null ? (data['followers'] as List).length : 0).toString(),
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                (data['followers'] != null
+                                        ? (data['followers'] as List).length
+                                        : 0)
+                                    .toString(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const Text('Abonnés'),
                             ],
@@ -427,8 +455,13 @@ class ProfileScreen extends StatelessWidget {
                           Column(
                             children: [
                               Text(
-                                (data['following'] != null ? (data['following'] as List).length : 0).toString(),
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                (data['following'] != null
+                                        ? (data['following'] as List).length
+                                        : 0)
+                                    .toString(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const Text('Abonnements'),
                             ],
@@ -446,13 +479,22 @@ class ProfileScreen extends StatelessWidget {
                       const SizedBox(height: 8),
                       Expanded(
                         child: StreamBuilder(
-                          stream: FirebaseFirestore.instance.collection('lives').where('id_host', isEqualTo: user.uid).snapshots(),
+                          stream: FirebaseFirestore.instance
+                              .collection('lives')
+                              .where('id_host', isEqualTo: user.uid)
+                              .snapshots(),
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Center(child: CircularProgressIndicator());
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
                             }
-                            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                              return const Center(child: Text('Aucun live trouvé.'));
+                            if (!snapshot.hasData ||
+                                snapshot.data!.docs.isEmpty) {
+                              return const Center(
+                                child: Text('Aucun live trouvé.'),
+                              );
                             }
                             final docs = snapshot.data!.docs;
                             return ListView.builder(
@@ -465,11 +507,17 @@ class ProfileScreen extends StatelessWidget {
                                       width: 48,
                                       height: 48,
                                       color: Colors.deepPurple[100],
-                                      child: const Icon(Icons.live_tv, size: 28),
+                                      child: const Icon(
+                                        Icons.live_tv,
+                                        size: 28,
+                                      ),
                                     ),
                                     title: Text(live['desc'] ?? 'Mon live'),
                                     subtitle: Text(live['name_host'] ?? ''),
-                                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                                    trailing: const Icon(
+                                      Icons.arrow_forward_ios,
+                                      size: 16,
+                                    ),
                                     onTap: () {},
                                   ),
                                 );
