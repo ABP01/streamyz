@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:zego_uikit_prebuilt_live_streaming/zego_uikit_prebuilt_live_streaming.dart';
 
 import 'auth_screen.dart';
 import 'settings_screen.dart';
@@ -67,12 +68,23 @@ class _HomeScreenState extends State<HomeScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     Navigator.pop(context);
+                    final user = FirebaseAuth.instance.currentUser;
+                    if (user == null) return;
+                    final liveID =
+                        user.uid +
+                        DateTime.now().millisecondsSinceEpoch.toString();
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const ZegoLivePlaceholder(),
+                        builder: (_) => ZegoLivePage(
+                          liveID: liveID,
+                          userID: user.uid,
+                          userName:
+                              user.displayName ?? user.email ?? 'Utilisateur',
+                          isHost: true,
+                        ),
                       ),
                     );
                   },
@@ -535,16 +547,34 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-// Placeholder pour la page ZegoCloud Live
-class ZegoLivePlaceholder extends StatelessWidget {
-  const ZegoLivePlaceholder({super.key});
+// Remplace le placeholder par la vraie page ZegoLive
+class ZegoLivePage extends StatelessWidget {
+  final String liveID;
+  final String userID;
+  final String userName;
+  final bool isHost;
+
+  const ZegoLivePage({
+    super.key,
+    required this.liveID,
+    required this.userID,
+    required this.userName,
+    required this.isHost,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Live ZegoCloud')),
-      body: const Center(
-        child: Text('Interface de live ZegoCloud (à implémenter)'),
+      body: ZegoUIKitPrebuiltLiveStreaming(
+        appID: 1145966523,
+        appSign:
+            '718e87c3fe2843726ed28a6dd25197aac29eb8016d442cc84151c07b65e95d2d',
+        userID: userID,
+        userName: userName,
+        liveID: liveID,
+        config: isHost
+            ? ZegoUIKitPrebuiltLiveStreamingConfig.host()
+            : ZegoUIKitPrebuiltLiveStreamingConfig.audience(),
       ),
     );
   }
