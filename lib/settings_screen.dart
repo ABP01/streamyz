@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -11,13 +12,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _showFollowers = true;
   bool _isDarkMode = false;
 
-  void _logout() {
-    // TODO: Implémenter la logique de déconnexion réelle
-    Navigator.of(context).popUntil((route) => route.isFirst);
-    // Afficher un message ou rediriger vers la page de login
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Déconnecté')),
-    );
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Déconnecté')));
+    }
   }
 
   @override
@@ -44,7 +46,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Se déconnecter', style: TextStyle(color: Colors.red)),
+            title: const Text(
+              'Se déconnecter',
+              style: TextStyle(color: Colors.red),
+            ),
             onTap: _logout,
           ),
         ],
@@ -52,4 +57,5 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
+
 // ...existing code...
