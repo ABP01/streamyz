@@ -1,6 +1,8 @@
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'settings_screen.dart';
 import 'auth_screen.dart';
@@ -115,23 +117,36 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: ListView.builder(
-                  itemCount: 5,
-                  itemBuilder: (context, index) {
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      child: ListTile(
-                        leading: Container(
-                          width: 56,
-                          height: 56,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.live_tv, size: 32),
-                        ),
-                        title: Text('Live #${index + 1}'),
-                        subtitle: const Text('Description du live...'),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                        onTap: () {},
-                      ),
+                child: StreamBuilder(
+                  stream: FirebaseFirestore.instance.collection('lives').orderBy('livestarttime', descending: true).snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return const Center(child: Text('Aucun live trouvé.'));
+                    }
+                    final docs = snapshot.data!.docs;
+                    return ListView.builder(
+                      itemCount: docs.length,
+                      itemBuilder: (context, index) {
+                        final data = docs[index].data();
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          child: ListTile(
+                            leading: Container(
+                              width: 56,
+                              height: 56,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.live_tv, size: 32),
+                            ),
+                            title: Text(data['desc'] ?? 'Live'),
+                            subtitle: Text(data['name_host'] ?? ''),
+                            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                            onTap: () {},
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -231,16 +246,6 @@ class ExplorerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, String>> liveEnCours = List.generate(
-      5,
-          (i) => {
-        'title': 'Live en cours #${i + 1}',
-        'host': 'Host${i + 1}',
-        'desc': 'Description du live en cours...',
-        'thumbnail': '',
-      },
-    );
-
     return Scaffold(
       appBar: AppBar(title: const Text('Explorer')),
       body: Padding(
@@ -254,74 +259,86 @@ class ExplorerScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: ListView.separated(
-                itemCount: liveEnCours.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, i) {
-                  final live = liveEnCours[i];
-                  return Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 2,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: () {},
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 100,
-                            height: 70,
-                            decoration: BoxDecoration(
-                              color: Colors.deepPurple[100],
-                              borderRadius: const BorderRadius.horizontal(
-                                left: Radius.circular(16),
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.live_tv,
-                              size: 40,
-                              color: Colors.deepPurple,
-                            ),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    live['title']!,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
+              child: StreamBuilder(
+                stream: FirebaseFirestore.instance.collection('lives').where('is_live', isEqualTo: true).snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(child: Text('Aucun live en cours.'));
+                  }
+                  final docs = snapshot.data!.docs;
+                  return ListView.separated(
+                    itemCount: docs.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, i) {
+                      final data = docs[i].data();
+                      return Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 2,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {},
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 100,
+                                height: 70,
+                                decoration: BoxDecoration(
+                                  color: Colors.deepPurple[100],
+                                  borderRadius: const BorderRadius.horizontal(
+                                    left: Radius.circular(16),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'par ${live['host']!}',
-                                    style: const TextStyle(color: Colors.grey),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    live['desc']!,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
+                                ),
+                                child: const Icon(
+                                  Icons.live_tv,
+                                  size: 40,
+                                  color: Colors.deepPurple,
+                                ),
                               ),
-                            ),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        data['desc'] ?? 'Live',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'par ${data['name_host'] ?? ''}',
+                                        style: const TextStyle(color: Colors.grey),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        data['desc'] ?? '',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.only(right: 12),
+                                child: Icon(Icons.arrow_forward_ios, size: 18),
+                              ),
+                            ],
                           ),
-                          const Padding(
-                            padding: EdgeInsets.only(right: 12),
-                            child: Icon(Icons.arrow_forward_ios, size: 18),
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -339,6 +356,7 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profil'),
@@ -354,81 +372,117 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 24),
-            const CircleAvatar(
-              radius: 48,
-              backgroundColor: Colors.deepPurple,
-              child: Icon(Icons.person, size: 48, color: Colors.white),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Nom d\'utilisateur',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text('Bio de l\'utilisateur...'),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: const [
-                Column(
-                  children: [
-                    Text('12', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text('Lives'),
-                  ],
-                ),
-                Column(
-                  children: [
-                    Text('340', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text('Abonnés'),
-                  ],
-                ),
-                Column(
-                  children: [
-                    Text('180', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text('Abonnements'),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Mes lives',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: ListView.builder(
-                itemCount: 3,
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      leading: Container(
-                        width: 48,
-                        height: 48,
-                        color: Colors.deepPurple[100],
-                        child: const Icon(Icons.live_tv, size: 28),
+      body: user == null
+          ? const Center(child: Text('Non connecté'))
+          : StreamBuilder(
+              stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || !snapshot.data!.exists) {
+                  return const Center(child: Text('Utilisateur non trouvé.'));
+                }
+                final data = snapshot.data!.data()!;
+                return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 24),
+                      CircleAvatar(
+                        radius: 48,
+                        backgroundColor: Colors.deepPurple,
+                        child: const Icon(Icons.person, size: 48, color: Colors.white),
                       ),
-                      title: Text('Mon live #${index + 1}'),
-                      subtitle: const Text('Description du live...'),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {},
-                    ),
-                  );
-                },
-              ),
+                      const SizedBox(height: 16),
+                      Text(
+                        data['username'] ?? 'Nom d\'utilisateur',
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(data['bio'] ?? 'Bio de l\'utilisateur...'),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Column(
+                            children: [
+                              Text(
+                                (data['lives_count'] ?? 0).toString(),
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              const Text('Lives'),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              Text(
+                                (data['followers'] != null ? (data['followers'] as List).length : 0).toString(),
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              const Text('Abonnés'),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              Text(
+                                (data['following'] != null ? (data['following'] as List).length : 0).toString(),
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              const Text('Abonnements'),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Mes lives',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: StreamBuilder(
+                          stream: FirebaseFirestore.instance.collection('lives').where('id_host', isEqualTo: user.uid).snapshots(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+                            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                              return const Center(child: Text('Aucun live trouvé.'));
+                            }
+                            final docs = snapshot.data!.docs;
+                            return ListView.builder(
+                              itemCount: docs.length,
+                              itemBuilder: (context, index) {
+                                final live = docs[index].data();
+                                return Card(
+                                  child: ListTile(
+                                    leading: Container(
+                                      width: 48,
+                                      height: 48,
+                                      color: Colors.deepPurple[100],
+                                      child: const Icon(Icons.live_tv, size: 28),
+                                    ),
+                                    title: Text(live['desc'] ?? 'Mon live'),
+                                    subtitle: Text(live['name_host'] ?? ''),
+                                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                                    onTap: () {},
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-          ],
-        ),
-      ),
     );
   }
 }
