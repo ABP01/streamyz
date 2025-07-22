@@ -160,7 +160,34 @@ class _HomeScreenState extends State<HomeScreen> {
                               Icons.arrow_forward_ios,
                               size: 16,
                             ),
-                            onTap: () {},
+                            onTap: () {
+                              // Ouvre le live en mode spectateur
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ZegoLivePage(
+                                    liveID: data['live_id'] ?? '',
+                                    userID:
+                                        FirebaseAuth
+                                            .instance
+                                            .currentUser
+                                            ?.uid ??
+                                        '',
+                                    userName:
+                                        FirebaseAuth
+                                            .instance
+                                            .currentUser
+                                            ?.displayName ??
+                                        FirebaseAuth
+                                            .instance
+                                            .currentUser
+                                            ?.email ??
+                                        'Utilisateur',
+                                    isHost: false,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         );
                       },
@@ -301,7 +328,31 @@ class ExplorerScreen extends StatelessWidget {
                         elevation: 2,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(16),
-                          onTap: () {},
+                          onTap: () {
+                            // Ouvre le live en mode spectateur
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ZegoLivePage(
+                                  liveID: data['live_id'] ?? '',
+                                  userID:
+                                      FirebaseAuth.instance.currentUser?.uid ??
+                                      '',
+                                  userName:
+                                      FirebaseAuth
+                                          .instance
+                                          .currentUser
+                                          ?.displayName ??
+                                      FirebaseAuth
+                                          .instance
+                                          .currentUser
+                                          ?.email ??
+                                      'Utilisateur',
+                                  isHost: false,
+                                ),
+                              ),
+                            );
+                          },
                           child: Row(
                             children: [
                               Container(
@@ -530,7 +581,34 @@ class ProfileScreen extends StatelessWidget {
                                       Icons.arrow_forward_ios,
                                       size: 16,
                                     ),
-                                    onTap: () {},
+                                    onTap: () {
+                                      // Ouvre le live en mode spectateur
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => ZegoLivePage(
+                                            liveID: live['live_id'] ?? '',
+                                            userID:
+                                                FirebaseAuth
+                                                    .instance
+                                                    .currentUser
+                                                    ?.uid ??
+                                                '',
+                                            userName:
+                                                FirebaseAuth
+                                                    .instance
+                                                    .currentUser
+                                                    ?.displayName ??
+                                                FirebaseAuth
+                                                    .instance
+                                                    .currentUser
+                                                    ?.email ??
+                                                'Utilisateur',
+                                            isHost: false,
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
                                 );
                               },
