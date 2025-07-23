@@ -6,6 +6,7 @@ class User {
   final String avatar;
   final String usernameLower;
   final bool isPremium;
+  final bool showFollowers;
   final int totalLiveGift;
   final List<String> followers;
 
@@ -17,6 +18,7 @@ class User {
     required this.avatar,
     required this.usernameLower,
     required this.isPremium,
+    required this.showFollowers,
     required this.totalLiveGift,
     required this.followers,
   });
@@ -29,6 +31,7 @@ class User {
     avatar: map['avatar'] ?? '',
     usernameLower: map['username_lower'] ?? '',
     isPremium: map['is_premium'] ?? false,
+    showFollowers: map['showFollowers'] ?? true,
     totalLiveGift: map['totallivegift'] ?? 0,
     followers: List<String>.from(map['followers'] ?? []),
   );
@@ -41,6 +44,7 @@ class User {
     'avatar': avatar,
     'username_lower': usernameLower,
     'is_premium': isPremium,
+    'showFollowers': showFollowers,
     'totallivegift': totalLiveGift,
     'followers': followers,
   };

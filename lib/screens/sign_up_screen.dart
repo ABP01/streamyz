@@ -27,28 +27,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
             email: _emailController.text.trim(),
             password: _passwordController.text.trim(),
           );
-      // Save username in Firestore
+      // Save all user fields in Firestore
       final username = _usernameController.text.trim();
-      if (username.isNotEmpty) {
-        // ignore: avoid_print
-        // L'import de cloud_firestore est déjà en haut du fichier
-        // Actually save username
-        // ignore: unnecessary_null_comparison
-        if (credential.user != null) {
-          // ignore: avoid_catches_without_on_clauses
-          try {
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(credential.user!.uid)
-                .set({
-                  'email': _emailController.text.trim(),
-                  'username': username,
-                  'createdAt': FieldValue.serverTimestamp(),
-                });
-          } catch (e) {
-            // ignore: avoid_print
-            print('Erreur Firestore: $e');
-          }
+      if (credential.user != null) {
+        try {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(credential.user!.uid)
+              .set({
+                'id': credential.user!.uid,
+                'email': _emailController.text.trim(),
+                'username': username,
+                'password': _passwordController.text.trim(),
+                'avatar': '',
+                'username_lower': username.toLowerCase(),
+                'is_premium': false,
+                'showFollowers': true,
+                'totallivegift': 0,
+                'followers': [],
+                'createdAt': FieldValue.serverTimestamp(),
+              });
+        } catch (e) {
+          print('Erreur Firestore: $e');
         }
       }
       if (mounted) Navigator.of(context).pop();
