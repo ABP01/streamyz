@@ -162,27 +162,19 @@ class ProfileScreen extends StatelessWidget {
                                       size: 16,
                                     ),
                                     onTap: () {
+                                      final currentUser = FirebaseAuth.instance.currentUser;
+                                      final userName = (currentUser?.displayName?.isNotEmpty ?? false)
+                                          ? currentUser!.displayName!
+                                          : (currentUser?.email?.isNotEmpty ?? false)
+                                              ? currentUser!.email!
+                                              : 'Utilisateur';
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                           builder: (_) => ZegoLivePage(
                                             liveID: live['live_id'] ?? '',
-                                            userID:
-                                                FirebaseAuth
-                                                    .instance
-                                                    .currentUser
-                                                    ?.uid ??
-                                                '',
-                                            userName:
-                                                FirebaseAuth
-                                                    .instance
-                                                    .currentUser
-                                                    ?.displayName ??
-                                                FirebaseAuth
-                                                    .instance
-                                                    .currentUser
-                                                    ?.email ??
-                                                'Utilisateur',
+                                            userID: currentUser?.uid ?? '',
+                                            userName: userName,
                                             isHost: false,
                                           ),
                                         ),

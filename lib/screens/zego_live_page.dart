@@ -18,17 +18,25 @@ class ZegoLivePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ZegoUIKitPrebuiltLiveStreaming(
-        appID: 1145966523,
-        appSign:
-            '718e87c3fe2843726ed28a6dd25197aac29eb8016d442cc84151c07b65e95d2d',
-        userID: userID,
-        userName: userName,
-        liveID: liveID,
-        config: isHost
-            ? ZegoUIKitPrebuiltLiveStreamingConfig.host()
-            : ZegoUIKitPrebuiltLiveStreamingConfig.audience(),
-      ),
+      body: isHost
+          ? ZegoUIKitPrebuiltLiveStreaming(
+              appID: 1145966523,
+              appSign:
+                  '718e87c3fe2843726ed28a6dd25197aac29eb8016d442cc84151c07b65e95d2d',
+              userID: userID,
+              userName: userName,
+              liveID: liveID,
+              config: ZegoUIKitPrebuiltLiveStreamingConfig.host(),
+            )
+          : ZegoUIKitPrebuiltLiveStreaming(
+              appID: 1145966523,
+              appSign:
+                  '718e87c3fe2843726ed28a6dd25197aac29eb8016d442cc84151c07b65e95d2d',
+              userID: userID,
+              userName: userName,
+              liveID: liveID,
+              config: ZegoUIKitPrebuiltLiveStreamingConfig.audience(),
+            ),
     );
   }
 }

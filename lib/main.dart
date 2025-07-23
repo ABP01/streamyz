@@ -107,25 +107,19 @@ class ExplorerScreen extends StatelessWidget {
                         child: InkWell(
                           borderRadius: BorderRadius.circular(16),
                           onTap: () {
-                            // Ouvre le live en mode spectateur
+                            final currentUser = FirebaseAuth.instance.currentUser;
+                            final userName = (currentUser?.displayName?.isNotEmpty ?? false)
+                                ? currentUser!.displayName!
+                                : (currentUser?.email?.isNotEmpty ?? false)
+                                    ? currentUser!.email!
+                                    : 'Utilisateur';
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => ZegoLivePage(
                                   liveID: data['live_id'] ?? '',
-                                  userID:
-                                      FirebaseAuth.instance.currentUser?.uid ??
-                                      '',
-                                  userName:
-                                      FirebaseAuth
-                                          .instance
-                                          .currentUser
-                                          ?.displayName ??
-                                      FirebaseAuth
-                                          .instance
-                                          .currentUser
-                                          ?.email ??
-                                      'Utilisateur',
+                                  userID: currentUser?.uid ?? '',
+                                  userName: userName,
                                   isHost: false,
                                 ),
                               ),
@@ -360,28 +354,20 @@ class ProfileScreen extends StatelessWidget {
                                       size: 16,
                                     ),
                                     onTap: () {
+                                      final currentUser = FirebaseAuth.instance.currentUser;
+                                      final userName = (currentUser?.displayName?.isNotEmpty ?? false)
+                                          ? currentUser!.displayName!
+                                          : (currentUser?.email?.isNotEmpty ?? false)
+                                              ? currentUser!.email!
+                                              : 'Utilisateur';
                                       // Ouvre le live en mode spectateur
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                           builder: (_) => ZegoLivePage(
                                             liveID: live['live_id'] ?? '',
-                                            userID:
-                                                FirebaseAuth
-                                                    .instance
-                                                    .currentUser
-                                                    ?.uid ??
-                                                '',
-                                            userName:
-                                                FirebaseAuth
-                                                    .instance
-                                                    .currentUser
-                                                    ?.displayName ??
-                                                FirebaseAuth
-                                                    .instance
-                                                    .currentUser
-                                                    ?.email ??
-                                                'Utilisateur',
+                                            userID: currentUser?.uid ?? '',
+                                            userName: userName,
                                             isHost: false,
                                           ),
                                         ),
