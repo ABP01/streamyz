@@ -55,11 +55,18 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    final userName = (user.displayName?.isNotEmpty ?? false)
-        ? user.displayName!
-        : (user.email?.isNotEmpty ?? false)
-        ? user.email!
+    // Récupère username et avatar depuis Firestore
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+    final userData = userDoc.data() ?? {};
+    final userName = (userData['username'] as String?)?.isNotEmpty == true
+        ? userData['username'] as String
         : 'Utilisateur';
+    final userAvatar = (userData['avatar'] as String?)?.isNotEmpty == true
+        ? userData['avatar'] as String
+        : (user.photoURL ?? '');
 
     // Initialisation du live dans Firestore selon le modèle Live
     final liveDesc = descController.text.isNotEmpty
@@ -72,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'thumbnail': thumbnailUrl ?? '',
       'desc': liveDesc,
       'name_host': userName,
-      'avatar_host': user.photoURL ?? '',
+      'avatar_host': userAvatar,
       'id_chat': '',
       'src_live': '',
       'livestarttime': DateTime.now().millisecondsSinceEpoch,
@@ -90,6 +97,24 @@ class _HomeScreenState extends State<HomeScreen> {
         .collection('lives')
         .doc(liveID)
         .set(liveData, SetOptions(merge: true));
+
+    // Initialisation de la sous-collection Livestats
+    final livestatsData = {
+      'live_id': liveID,
+      'live_url': '',
+      'id_host': user.uid,
+      'tab_likes': [],
+      'emojis': [],
+      'account': 0,
+      'likes': 0,
+      'gifters': [],
+    };
+    await FirebaseFirestore.instance
+        .collection('lives')
+        .doc(liveID)
+        .collection('livestats')
+        .doc(liveID)
+        .set(livestatsData, SetOptions(merge: true));
 
     Navigator.push(
       parentContext,
@@ -273,53 +298,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildLiveCard(Map<String, dynamic> data) {
+    final String? thumbnailUrl = data['thumbnail'] as String?;
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: data['thumbnail'] != null
-              ? Image.network(
-                  data['thumbnail'],
-                  width: 60,
-                  height: 60,
-                  fit: BoxFit.cover,
-                )
-              : Container(
-                  width: 60,
-                  height: 60,
-                  color: Colors.grey[300],
-                  child: const Icon(
-                    Icons.live_tv,
-                    size: 32,
-                    color: Colors.grey,
-                  ),
-                ),
-        ),
-        title: Text(
-          data['desc'] ?? 'Live sans description',
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-        ),
-        subtitle: Text(
-          data['name_host'] ?? 'Hôte inconnu',
-          style: TextStyle(color: Colors.grey[700]),
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 18,
-          color: Colors.grey,
-        ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 6,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
         onTap: () {
           final currentUser = FirebaseAuth.instance.currentUser;
           final userName = (currentUser?.displayName?.isNotEmpty ?? false)
               ? currentUser!.displayName!
-              : (currentUser?.email?.isNotEmpty ?? false)
-              ? currentUser!.email!
               : 'Utilisateur';
           Navigator.push(
             context,
@@ -333,6 +322,142 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         },
+        child: SizedBox(
+          height: 160,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: thumbnailUrl != null && thumbnailUrl.isNotEmpty
+                    ? Image.network(thumbnailUrl, fit: BoxFit.cover)
+                    : Container(
+                        color: Colors.deepPurple[100],
+                        child: const Center(
+                          child: Icon(
+                            Icons.live_tv,
+                            size: 60,
+                            color: Colors.deepPurple,
+                          ),
+                        ),
+                      ),
+              ),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.6),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 12,
+                bottom: 16,
+                right: 60,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      data['desc'] ?? 'Live',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black54,
+                            offset: Offset(0, 1),
+                            blurRadius: 2,
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 13,
+                          backgroundImage:
+                              (data['avatar_host'] != null &&
+                                  data['avatar_host'].toString().isNotEmpty)
+                              ? NetworkImage(data['avatar_host'])
+                              : null,
+                          backgroundColor: Colors.grey[300],
+                          child:
+                              (data['avatar_host'] == null ||
+                                  data['avatar_host'].toString().isEmpty)
+                              ? const Icon(
+                                  Icons.person,
+                                  size: 16,
+                                  color: Colors.grey,
+                                )
+                              : null,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          data['name_host'] ?? 'Utilisateur',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                right: 16,
+                bottom: 16,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 2,
+                  ),
+                  onPressed: () {
+                    final currentUser = FirebaseAuth.instance.currentUser;
+                    final userName =
+                        (currentUser?.displayName?.isNotEmpty ?? false)
+                        ? currentUser!.displayName!
+                        : 'Utilisateur';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ZegoLivePage(
+                          liveID: data['live_id'] ?? '',
+                          userID: currentUser?.uid ?? '',
+                          userName: userName,
+                          isHost: false,
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    'Revoir',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
