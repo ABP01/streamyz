@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
+import 'package:streamyz/screens/edit_profile_screen.dart';
 import 'package:streamyz/screens/settings_screen.dart';
 import 'package:streamyz/screens/zego_live_page.dart';
 
@@ -15,6 +15,15 @@ class ProfileScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Profil'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
@@ -162,12 +171,18 @@ class ProfileScreen extends StatelessWidget {
                                       size: 16,
                                     ),
                                     onTap: () {
-                                      final currentUser = FirebaseAuth.instance.currentUser;
-                                      final userName = (currentUser?.displayName?.isNotEmpty ?? false)
+                                      final currentUser =
+                                          FirebaseAuth.instance.currentUser;
+                                      final userName =
+                                          (currentUser
+                                                  ?.displayName
+                                                  ?.isNotEmpty ??
+                                              false)
                                           ? currentUser!.displayName!
-                                          : (currentUser?.email?.isNotEmpty ?? false)
-                                              ? currentUser!.email!
-                                              : 'Utilisateur';
+                                          : (currentUser?.email?.isNotEmpty ??
+                                                false)
+                                          ? currentUser!.email!
+                                          : 'Utilisateur';
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
