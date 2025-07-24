@@ -1,0 +1,36 @@
+@startuml
+actor Utilisateur
+participant "Flutter UI" as UI
+participant "Firebase Auth" as Auth
+participant "Firestore" as DB
+participant "Azure Blob Storage" as Azure
+participant "Zego Live Streaming" as Zego
+
+== Authentification ==
+Utilisateur -> UI : Saisit email/mot de passe
+UI -> Auth : signInWithEmailAndPassword()
+Auth -> UI : Résultat (succès/échec)
+UI -> DB : get user profile
+DB -> UI : user data
+
+== Démarrer un live ==
+Utilisateur -> UI : Clique "Démarrer live"
+UI -> UI : Sélectionne miniature
+UI -> Azure : Upload miniature
+Azure -> UI : URL miniature
+UI -> DB : Crée document live (live + stats)
+DB -> UI : Confirmation
+UI -> Zego : Démarre live (host)
+Zego -> UI : Flux vidéo
+
+== Rejoindre un live ==
+Utilisateur -> UI : Sélectionne un live à rejoindre
+UI -> Zego : Rejoint live (audience)
+Zego -> UI : Flux vidéo
+
+== Affichage profil ==
+Utilisateur -> UI : Accède à son profil
+UI -> DB : get user profile
+DB -> UI : user data
+
+@enduml

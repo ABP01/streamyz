@@ -1,0 +1,69 @@
+@startuml
+
+class User {
+  - id : String
+  - email : String
+  - username : String
+  - password : String
+  - avatar : String
+  - bio : String
+  - usernameLower : String
+  - isPremium : bool
+  - showFollowers : bool
+  - totalLiveGift : int
+  - followers : List<String>
+}
+
+class Live {
+  - liveId : String
+  - liveUrl : String
+  - idHost : String
+  - thumbnail : String
+  - desc : String
+  - nameHost : String
+  - avatarHost : String
+  - idChat : String
+  - srcLive : String
+  - livestarttime : int
+  - liveendtime : int
+  - isSignaler : bool
+  - isPremiumLive : bool
+  - totalGift : int
+  - maxConnect : int
+  - invites : List<String>
+  - stats : Livestats
+}
+
+class Livestats {
+  - liveId : String
+  - liveUrl : String
+  - idHost : String
+  - tabLikes : List<String>
+  - emojis : List
+  - account : int
+  - likes : int
+  - gifters : List<Donateur>
+}
+
+class Donateur {
+  - userId : String
+  - username : String
+  - userAvatar : String
+  - count : int
+}
+
+class Chat {
+  - liveId : String
+  - idChat : String
+  - idHost : String
+  - message : String
+  - idUser : String
+  - time : DateTime
+}
+
+User "1" -- "many" Live : hosts
+Live "1" -- "1" Livestats : has
+Livestats "1" -- "many" Donateur : gifters
+Live "1" -- "many" Chat : chats
+
+@enduml

@@ -4,6 +4,7 @@ class User {
   final String username;
   final String password;
   final String avatar;
+  final String bio;
   final String usernameLower;
   final bool isPremium;
   final bool showFollowers;
@@ -16,6 +17,7 @@ class User {
     required this.username,
     required this.password,
     required this.avatar,
+    required this.bio,
     required this.usernameLower,
     required this.isPremium,
     required this.showFollowers,
@@ -29,6 +31,7 @@ class User {
     username: map['username'] ?? '',
     password: map['password'] ?? '',
     avatar: map['avatar'] ?? '',
+    bio: map['bio'] ?? '',
     usernameLower: map['username_lower'] ?? '',
     isPremium: map['is_premium'] ?? false,
     showFollowers: map['showFollowers'] ?? true,

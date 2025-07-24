@@ -1,0 +1,133 @@
+@startuml test
+
+' 1. Inscription / Connexion
+title Inscription / Connexion
+start
+:Afficher page d'accueil;
+:Entrer email et mot de passe;
+if (Compte existe ?) then (Oui)
+  :Vérifier mot de passe;
+  if (Mot de passe correct ?) then (Oui)
+    :Accéder à la plateforme;
+  else (Non)
+    :Afficher erreur;
+  endif
+else (Non)
+  :Créer nouveau compte;
+  :Accéder à la plateforme;
+endif
+stop
+
+' 2. Modifier profil
+title Modifier profil
+start
+:Accéder à la page profil;
+:Modifier informations ou avatar;
+:Valider modifications;
+:Enregistrer changements;
+stop
+
+' 3. Démarrer un live
+title Démarrer un live
+start
+:Accéder à la page de création de live;
+:Entrer titre et description;
+:Ajouter miniature/avatar;
+:Cliquer sur "Démarrer";
+:Diffusion en direct commence;
+stop
+
+' 4. Uploader miniature/avatar
+title Uploader miniature/avatar
+start
+:Sélectionner image;
+:Vérifier format et taille;
+if (Image valide ?) then (Oui)
+  :Téléverser image;
+  :Associer à profil ou live;
+else (Non)
+  :Afficher erreur;
+endif
+stop
+
+' 5. Explorer lives
+title Explorer lives
+start
+:Accéder à la page d'exploration;
+:Afficher liste des lives;
+:Filtrer ou rechercher;
+:Sélectionner un live;
+stop
+
+' 6. Rejoindre un live
+title Rejoindre un live
+start
+:Sélectionner un live;
+:Accéder à la diffusion;
+:Regarder et interagir;
+stop
+
+' 7. Gérer abonnements
+title Gérer abonnements
+start
+:Accéder à la page d'un créateur;
+if (Déjà abonné ?) then (Oui)
+  :Cliquer sur "Se désabonner";
+else (Non)
+  :Cliquer sur "S'abonner";
+endif
+:Mettre à jour liste d'abonnements;
+stop
+
+' 8. Gérer paramètres
+title Gérer paramètres
+start
+:Accéder aux paramètres;
+:Modifier préférences;
+:Valider et enregistrer;
+stop
+
+' 9. Déconnexion
+title Déconnexion
+start
+:Cliquer sur "Déconnexion";
+:Terminer session;
+:Retour à la page d'accueil;
+stop
+
+' 10. Voir anciens lives
+title Voir anciens lives
+start
+:Accéder à la page des rediffusions;
+:Afficher liste des anciens lives;
+:Sélectionner et regarder;
+stop
+
+' 11. Interagir sur live
+title Interagir sur live
+start
+:Regarder un live;
+:Envoyer message, emoji ou don;
+:Afficher interaction en direct;
+stop
+
+' 12. Modérer contenu
+title Modérer contenu
+start
+:Surveiller les lives;
+if (Contenu inapproprié ?) then (Oui)
+  :Signaler ou supprimer contenu;
+  :Notifier utilisateur;
+endif
+stop
+
+' 13. Gérer utilisateurs
+title Gérer utilisateurs
+start
+:Accéder à la liste des utilisateurs;
+:Sélectionner utilisateur;
+:Appliquer action (bannir, suspendre, etc.);
+:Mettre à jour statut;
+stop
+
+@enduml

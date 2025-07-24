@@ -1,0 +1,29 @@
+@startuml
+left to right direction
+actor Utilisateur
+actor Administrateur
+
+rectangle "Streamyz" {
+  Utilisateur -- (S'inscrire / Se connecter)
+  Utilisateur -- (Modifier profil)
+  Utilisateur -- (Démarrer un live)
+  Utilisateur -- (Uploader miniature/avatar)
+  Utilisateur -- (Explorer lives)
+  Utilisateur -- (Rejoindre un live)
+  Utilisateur -- (Gérer abonnements)
+  Utilisateur -- (Gérer paramètres)
+  Utilisateur -- (Déconnexion)
+  Utilisateur -- (Voir anciens lives)
+  Utilisateur -- (Interagir sur live)
+  Administrateur -- (Modérer contenu)
+  Administrateur -- (Gérer utilisateurs)
+}
+
+(S'inscrire / Se connecter) .> (Modifier profil) : <<include>>
+(Démarrer un live) .> (Uploader miniature/avatar) : <<include>>
+(Démarrer un live) .> (Interagir sur live) : <<extend>>
+(Rejoindre un live) .> (Interagir sur live) : <<extend>>
+(Gérer paramètres) .> (Déconnexion) : <<include>>
+(Gérer abonnements) .> (Explorer lives) : <<extend>>
+
+@enduml

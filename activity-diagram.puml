@@ -1,0 +1,53 @@
+
+@startuml
+title Diagramme d'activité - Streamyz
+
+start
+
+:Ouvrir l'application;
+if (Utilisateur authentifié ?) then (Oui)
+  :Afficher MainScreen;
+else (Non)
+  :Afficher écran de connexion;
+  :Authentification (email/mot de passe);
+  if (Succès) then (Oui)
+    :Afficher MainScreen;
+  else (Non)
+    :Afficher erreur;
+    stop
+  endif
+endif
+
+partition Navigation {
+  :Accueil;
+  :Explorer;
+  :Profil;
+  :Paramètres;
+}
+
+partition Live {
+  :Démarrer un live;
+  :Uploader miniature (Azure Blob);
+  :Créer document live (Firestore);
+  :Afficher live (Zego UIKit);
+  :Fin du live;
+  :Mettre à jour Firestore;
+}
+
+partition Profil {
+  :Afficher profil;
+  :Modifier profil;
+  :Uploader avatar (Azure Blob);
+  :Mettre à jour Firestore;
+}
+
+partition Explorer {
+  :Lister lives en cours (Firestore);
+  :Rejoindre un live;
+  :Afficher live (Zego UIKit);
+}
+
+:Déconnexion;
+:Retour à l'écran de connexion;
+
+stop

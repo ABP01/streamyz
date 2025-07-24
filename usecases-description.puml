@@ -1,0 +1,43 @@
+@startuml
+' Description textuelle des cas d'utilisation du projet Streamyz
+
+' 1. Inscription / Connexion
+'    L'utilisateur peut créer un compte ou se connecter pour accéder à la plateforme.
+
+' 2. Modifier profil
+'    L'utilisateur peut modifier ses informations personnelles et son avatar.
+
+' 3. Démarrer un live
+'    L'utilisateur peut lancer une diffusion en direct, ajouter une miniature/avatar.
+
+' 4. Uploader miniature/avatar
+'    L'utilisateur peut téléverser une image pour illustrer son live ou son profil.
+
+' 5. Explorer lives
+'    L'utilisateur peut parcourir les lives en cours ou passés.
+
+' 6. Rejoindre un live
+'    L'utilisateur peut rejoindre un live en cours pour le regarder et interagir.
+
+' 7. Gérer abonnements
+'    L'utilisateur peut s'abonner ou se désabonner à des créateurs.
+
+' 8. Gérer paramètres
+'    L'utilisateur peut configurer ses préférences et paramètres de compte.
+
+' 9. Déconnexion
+'    L'utilisateur peut se déconnecter de la plateforme.
+
+' 10. Voir anciens lives
+'     L'utilisateur peut accéder aux rediffusions des lives précédents.
+
+' 11. Interagir sur live
+'     L'utilisateur peut envoyer des messages, des emojis ou des dons pendant un live.
+
+' 12. Modérer contenu
+'     L'administrateur peut surveiller et modérer les contenus diffusés.
+
+' 13. Gérer utilisateurs
+'     L'administrateur peut gérer les comptes utilisateurs (bannir, suspendre, etc.).
+
+@enduml
