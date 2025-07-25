@@ -297,6 +297,165 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showLiveStreamCard(BuildContext context, Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.purple.shade900,
+                Colors.blue.shade800,
+                Colors.purple.shade800,
+              ],
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Thumbnail avec overlay
+              Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  image: DecorationImage(
+                    image: NetworkImage(data['thumbnail'] ?? ''),
+                    fit: BoxFit.cover,
+                    onError: (exception, stackTrace) {},
+                  ),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.7),
+                      ],
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Spacer(),
+                        Text(
+                          data['desc'] ?? 'Live sans titre',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundImage: NetworkImage(
+                                data['avatar_host'] ?? '',
+                              ),
+                              child: data['avatar_host']?.isEmpty ?? true
+                                  ? const Icon(Icons.person, size: 16)
+                                  : null,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              data['name_host'] ?? 'Hôte inconnu',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Actions
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.purple.shade800,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                      ),
+                      onPressed: () async {
+                        Navigator.of(context).pop();
+
+                        final currentUser = FirebaseAuth.instance.currentUser;
+                        if (currentUser == null) return;
+
+                        // Récupérer le nom d'utilisateur depuis Firestore
+                        String userName = 'Utilisateur';
+                        try {
+                          final userDoc = await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(currentUser.uid)
+                              .get();
+                          if (userDoc.exists) {
+                            final userData = userDoc.data() ?? {};
+                            userName = userData['username'] ?? 'Utilisateur';
+                          }
+                        } catch (e) {
+                          debugPrint(
+                            'Erreur lors de la récupération du nom d\'utilisateur: $e',
+                          );
+                        }
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ZegoLivePage(
+                              liveID: data['live_id'] ?? '',
+                              userID: currentUser.uid,
+                              userName: userName,
+                              isHost: false,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.play_arrow),
+                      label: const Text('Rejoindre'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildLiveCard(Map<String, dynamic> data) {
     final String? thumbnailUrl = data['thumbnail'] as String?;
     return Card(
@@ -431,18 +590,33 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     elevation: 2,
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     final currentUser = FirebaseAuth.instance.currentUser;
-                    final userName =
-                        (currentUser?.displayName?.isNotEmpty ?? false)
-                        ? currentUser!.displayName!
-                        : 'Utilisateur';
+                    if (currentUser == null) return;
+
+                    // Récupérer le nom d'utilisateur depuis Firestore
+                    String userName = 'Utilisateur';
+                    try {
+                      final userDoc = await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(currentUser.uid)
+                          .get();
+                      if (userDoc.exists) {
+                        final userData = userDoc.data() ?? {};
+                        userName = userData['username'] ?? 'Utilisateur';
+                      }
+                    } catch (e) {
+                      debugPrint(
+                        'Erreur lors de la récupération du nom d\'utilisateur: $e',
+                      );
+                    }
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => ZegoLivePage(
                           liveID: data['live_id'] ?? '',
-                          userID: currentUser?.uid ?? '',
+                          userID: currentUser.uid,
                           userName: userName,
                           isHost: false,
                         ),

@@ -189,44 +189,46 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
 
   // Configuration personnalisée pour le host
   ZegoUIKitPrebuiltLiveStreamingConfig _getHostConfig() {
-    return ZegoUIKitPrebuiltLiveStreamingConfig.host()
-      ..audioVideoView.showAvatarInAudioMode = true
-      // Masquer complètement la barre du haut de ZegoUIKit
-      ..topMenuBar.showCloseButton = false
-      ..topMenuBar.height = 0
-      ..topMenuBar.padding = EdgeInsets.zero
-      ..topMenuBar.margin = EdgeInsets.zero
-      // Configuration de la barre du bas pour garder les boutons essentiels
-      ..bottomMenuBar.showInRoomMessageButton =
-          false // Désactiver le chat ZegoUIKit
-      ..bottomMenuBar.hostButtons = [
-        ZegoLiveStreamingMenuBarButtonName.toggleMicrophoneButton,
-        ZegoLiveStreamingMenuBarButtonName.toggleCameraButton,
-        ZegoLiveStreamingMenuBarButtonName.switchCameraButton,
-      ]
-      ..bottomMenuBar.maxCount = 3
-      ..foreground = _buildCustomForeground()
-      ..background = _buildCustomBackground();
+    final config = ZegoUIKitPrebuiltLiveStreamingConfig.host();
+    config.audioVideoView.showAvatarInAudioMode = true;
+    // Masquer complètement la barre du haut de ZegoUIKit
+    config.topMenuBar.showCloseButton = false;
+    config.topMenuBar.height = 0;
+    config.topMenuBar.padding = EdgeInsets.zero;
+    config.topMenuBar.margin = EdgeInsets.zero;
+    // Configuration de la barre du bas pour garder les boutons essentiels
+    config.bottomMenuBar.showInRoomMessageButton =
+        false; // Désactiver le chat ZegoUIKit
+    config.bottomMenuBar.hostButtons = [
+      ZegoLiveStreamingMenuBarButtonName.toggleMicrophoneButton,
+      ZegoLiveStreamingMenuBarButtonName.toggleCameraButton,
+      ZegoLiveStreamingMenuBarButtonName.switchCameraButton,
+    ];
+    config.bottomMenuBar.maxCount = 3;
+    config.foreground = _buildCustomForeground();
+    config.background = _buildCustomBackground();
+    return config;
   }
 
   // Configuration personnalisée pour les spectateurs
   ZegoUIKitPrebuiltLiveStreamingConfig _getAudienceConfig() {
-    return ZegoUIKitPrebuiltLiveStreamingConfig.audience()
-      ..audioVideoView.showAvatarInAudioMode = true
-      // Masquer complètement la barre du haut de ZegoUIKit pour l'audience
-      ..topMenuBar.showCloseButton = false
-      ..topMenuBar.height = 0
-      ..topMenuBar.padding = EdgeInsets.zero
-      ..topMenuBar.margin = EdgeInsets.zero
-      // Configuration de la barre du bas - seulement le bouton micro pour l'audience
-      ..bottomMenuBar.showInRoomMessageButton =
-          false // Désactiver le chat ZegoUIKit
-      ..bottomMenuBar.audienceButtons = [
-        ZegoLiveStreamingMenuBarButtonName.toggleMicrophoneButton,
-      ]
-      ..bottomMenuBar.maxCount = 1
-      ..foreground = _buildCustomForeground()
-      ..background = _buildCustomBackground();
+    final config = ZegoUIKitPrebuiltLiveStreamingConfig.audience();
+    config.audioVideoView.showAvatarInAudioMode = true;
+    // Masquer complètement la barre du haut de ZegoUIKit pour l'audience
+    config.topMenuBar.showCloseButton = false;
+    config.topMenuBar.height = 0;
+    config.topMenuBar.padding = EdgeInsets.zero;
+    config.topMenuBar.margin = EdgeInsets.zero;
+    // Configuration de la barre du bas - seulement le bouton micro pour l'audience
+    config.bottomMenuBar.showInRoomMessageButton =
+        false; // Désactiver le chat ZegoUIKit
+    config.bottomMenuBar.audienceButtons = [
+      ZegoLiveStreamingMenuBarButtonName.toggleMicrophoneButton,
+    ];
+    config.bottomMenuBar.maxCount = 1;
+    config.foreground = _buildCustomForeground();
+    config.background = _buildCustomBackground();
+    return config;
   }
 
   // Construire le foreground personnalisé avec l'interface de chat TikTok
