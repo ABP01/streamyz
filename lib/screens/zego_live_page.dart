@@ -45,18 +45,18 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     return Scaffold(
       body: widget.isHost
           ? ZegoUIKitPrebuiltLiveStreaming(
-              appID: 1145966523,
+              appID: 1635546276,
               appSign:
-                  '718e87c3fe2843726ed28a6dd25197aac29eb8016d442cc84151c07b65e95d2d',
+                  'f8a71bf0e57d934cda48369c059ea936375a67f088be3a5183b8efb147b28d3d',
               userID: widget.userID,
               userName: widget.userName,
               liveID: widget.liveID,
               config: ZegoUIKitPrebuiltLiveStreamingConfig.host(),
             )
           : ZegoUIKitPrebuiltLiveStreaming(
-              appID: 1145966523,
+              appID: 1635546276,
               appSign:
-                  '718e87c3fe2843726ed28a6dd25197aac29eb8016d442cc84151c07b65e95d2d',
+                  'f8a71bf0e57d934cda48369c059ea936375a67f088be3a5183b8efb147b28d3d',
               userID: widget.userID,
               userName: widget.userName,
               liveID: widget.liveID,
