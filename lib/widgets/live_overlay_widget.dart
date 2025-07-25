@@ -525,11 +525,26 @@ class _LiveOverlayWidgetState extends State<LiveOverlayWidget> {
             ),
           ),
           const Spacer(),
+          // Bouton de fermeture pour l'audience
+          if (!widget.isHost) ...[
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 24),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
           // Menu options
           GestureDetector(
             onTap: _showMoreOptions,
             child: Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.5),
                 shape: BoxShape.circle,
