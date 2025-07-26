@@ -170,25 +170,37 @@ class ProfileScreen extends StatelessWidget {
                                       Icons.arrow_forward_ios,
                                       size: 16,
                                     ),
-                                    onTap: () {
+                                    onTap: () async {
                                       final currentUser =
                                           FirebaseAuth.instance.currentUser;
-                                      final userName =
-                                          (currentUser
-                                                  ?.displayName
-                                                  ?.isNotEmpty ??
-                                              false)
-                                          ? currentUser!.displayName!
-                                          : (currentUser?.email?.isNotEmpty ??
-                                                false)
-                                          ? currentUser!.email!
-                                          : 'Utilisateur';
+                                      if (currentUser == null) return;
+
+                                      // Récupérer le nom d'utilisateur depuis Firestore
+                                      String userName = 'Utilisateur';
+                                      try {
+                                        final userDoc = await FirebaseFirestore
+                                            .instance
+                                            .collection('users')
+                                            .doc(currentUser.uid)
+                                            .get();
+                                        if (userDoc.exists) {
+                                          final userData = userDoc.data() ?? {};
+                                          userName =
+                                              userData['username'] ??
+                                              'Utilisateur';
+                                        }
+                                      } catch (e) {
+                                        debugPrint(
+                                          'Erreur lors de la récupération du nom d\'utilisateur: $e',
+                                        );
+                                      }
+
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                           builder: (_) => ZegoLivePage(
                                             liveID: live['live_id'] ?? '',
-                                            userID: currentUser?.uid ?? '',
+                                            userID: currentUser.uid,
                                             userName: userName,
                                             isHost: false,
                                           ),
