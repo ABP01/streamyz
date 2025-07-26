@@ -3,10 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:streamyz/screens/auth_screen.dart';
+import 'package:streamyz/screens/start_live_screen.dart';
 import 'package:zego_uikit_prebuilt_live_streaming/zego_uikit_prebuilt_live_streaming.dart';
 
 import 'screens/main_screen.dart';
 import 'screens/settings_screen.dart';
+import 'utils/online_status_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,11 +53,19 @@ class MyApp extends StatelessWidget {
                 );
               }
               if (snapshot.hasData) {
+                // Initialiser le gestionnaire de statut en ligne
+                OnlineStatusManager.initialize();
                 return const MainScreen();
+              } else {
+                // Nettoyer le statut en ligne lors de la déconnexion
+                OnlineStatusManager.dispose();
+                return const SignInScreen();
               }
-              return const SignInScreen();
             },
           ),
+          routes: {
+            '/start_live': (context) => const StartLiveScreen(),
+          },
         );
       },
     );
@@ -106,19 +116,35 @@ class ExplorerScreen extends StatelessWidget {
                         elevation: 2,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(16),
-                          onTap: () {
-                            final currentUser = FirebaseAuth.instance.currentUser;
-                            final userName = (currentUser?.displayName?.isNotEmpty ?? false)
-                                ? currentUser!.displayName!
-                                : (currentUser?.email?.isNotEmpty ?? false)
-                                    ? currentUser!.email!
-                                    : 'Utilisateur';
+                          onTap: () async {
+                            final currentUser =
+                                FirebaseAuth.instance.currentUser;
+                            if (currentUser == null) return;
+
+                            // Récupérer le nom d'utilisateur depuis Firestore
+                            String userName = 'Utilisateur';
+                            try {
+                              final userDoc = await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(currentUser.uid)
+                                  .get();
+                              if (userDoc.exists) {
+                                final userData = userDoc.data() ?? {};
+                                userName =
+                                    userData['username'] ?? 'Utilisateur';
+                              }
+                            } catch (e) {
+                              debugPrint(
+                                'Erreur lors de la récupération du nom d\'utilisateur: $e',
+                              );
+                            }
+
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => ZegoLivePage(
                                   liveID: data['live_id'] ?? '',
-                                  userID: currentUser?.uid ?? '',
+                                  userID: currentUser.uid,
                                   userName: userName,
                                   isHost: false,
                                 ),
@@ -353,20 +379,38 @@ class ProfileScreen extends StatelessWidget {
                                       Icons.arrow_forward_ios,
                                       size: 16,
                                     ),
-                                    onTap: () {
-                                      final currentUser = FirebaseAuth.instance.currentUser;
-                                      final userName = (currentUser?.displayName?.isNotEmpty ?? false)
-                                          ? currentUser!.displayName!
-                                          : (currentUser?.email?.isNotEmpty ?? false)
-                                              ? currentUser!.email!
-                                              : 'Utilisateur';
+                                    onTap: () async {
+                                      final currentUser =
+                                          FirebaseAuth.instance.currentUser;
+                                      if (currentUser == null) return;
+
+                                      // Récupérer le nom d'utilisateur depuis Firestore
+                                      String userName = 'Utilisateur';
+                                      try {
+                                        final userDoc = await FirebaseFirestore
+                                            .instance
+                                            .collection('users')
+                                            .doc(currentUser.uid)
+                                            .get();
+                                        if (userDoc.exists) {
+                                          final userData = userDoc.data() ?? {};
+                                          userName =
+                                              userData['username'] ??
+                                              'Utilisateur';
+                                        }
+                                      } catch (e) {
+                                        debugPrint(
+                                          'Erreur lors de la récupération du nom d\'utilisateur: $e',
+                                        );
+                                      }
+
                                       // Ouvre le live en mode spectateur
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
                                           builder: (_) => ZegoLivePage(
                                             liveID: live['live_id'] ?? '',
-                                            userID: currentUser?.uid ?? '',
+                                            userID: currentUser.uid,
                                             userName: userName,
                                             isHost: false,
                                           ),

@@ -5,129 +5,20 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:streamyz/screens/zego_live_page.dart';
+
+import '../screens/zego_live_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  File? _pickedImage;
-
-  Future<void> _handleStartLive(
-    BuildContext parentContext,
-    TextEditingController descController,
-  ) async {
-    Navigator.pop(parentContext);
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    final liveID = user.uid + DateTime.now().millisecondsSinceEpoch.toString();
-
-    String? thumbnailUrl;
-    if (_pickedImage != null) {
-      try {
-        final fileName =
-            '${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final String blobUrl =
-            'https://$azureStorageAccount.blob.core.windows.net/$azureContainer/$fileName?$azureSasToken';
-        final bytes = await _pickedImage!.readAsBytes();
-        final response = await http.put(
-          Uri.parse(blobUrl),
-          headers: {
-            'x-ms-blob-type': 'BlockBlob',
-            'Content-Type': 'image/jpeg',
-          },
-          body: bytes,
-        );
-        if (response.statusCode == 201) {
-          thumbnailUrl =
-              'https://$azureStorageAccount.blob.core.windows.net/$azureContainer/$fileName';
-        } else {
-          debugPrint(
-            'Erreur upload Azure: ${response.statusCode} ${response.body}',
-          );
-        }
-      } catch (e) {
-        debugPrint('Erreur upload Azure: $e');
-      }
-    }
-
-    // Récupère username et avatar depuis Firestore
-    final userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .get();
-    final userData = userDoc.data() ?? {};
-    final userName = (userData['username'] as String?)?.isNotEmpty == true
-        ? userData['username'] as String
-        : 'Utilisateur';
-    final userAvatar = (userData['avatar'] as String?)?.isNotEmpty == true
-        ? userData['avatar'] as String
-        : (user.photoURL ?? '');
-
-    // Initialisation du live dans Firestore selon le modèle Live
-    final liveDesc = descController.text.isNotEmpty
-        ? descController.text
-        : 'Live';
-    final liveData = {
-      'live_id': liveID,
-      'live_url': '',
-      'id_host': user.uid,
-      'thumbnail': thumbnailUrl ?? '',
-      'desc': liveDesc,
-      'name_host': userName,
-      'avatar_host': userAvatar,
-      'id_chat': '',
-      'src_live': '',
-      'livestarttime': DateTime.now().millisecondsSinceEpoch,
-      'liveendtime': 0,
-      'is_signaler': false,
-      'ispremiumlive': false,
-      'totalgift': 0,
-      'max_connect': 0,
-      'invites': [],
-      'stats': {},
-      'is_live': true,
-      'created_at': FieldValue.serverTimestamp(),
-    };
-    await FirebaseFirestore.instance
-        .collection('lives')
-        .doc(liveID)
-        .set(liveData, SetOptions(merge: true));
-
-    // Initialisation de la sous-collection Livestats
-    final livestatsData = {
-      'live_id': liveID,
-      'live_url': '',
-      'id_host': user.uid,
-      'tab_likes': [],
-      'emojis': [],
-      'account': 0,
-      'likes': 0,
-      'gifters': [],
-    };
-    await FirebaseFirestore.instance
-        .collection('lives')
-        .doc(liveID)
-        .collection('livestats')
-        .doc(liveID)
-        .set(livestatsData, SetOptions(merge: true));
-
-    Navigator.push(
-      parentContext,
-      MaterialPageRoute(
-        builder: (_) => ZegoLivePage(
-          liveID: liveID,
-          userID: user.uid,
-          userName: userName,
-          isHost: true,
-        ),
-      ),
-    );
-  }
+  String _currentUserID = '';
+  List<String> _followingUsers = [];
+  File? _selectedThumbnail;
 
   // Azure Blob Storage config
   static const String azureStorageAccount = 'streamyzstorage';
@@ -136,14 +27,36 @@ class _HomeScreenState extends State<HomeScreen> {
       'sp=racwdl&st=2025-07-23T14:18:12Z&se=2025-08-31T22:33:12Z&sv=2024-11-04&sr=c&sig=u7jROdJBpryF%2BLjk9jAVahnbk%2FiEOUPZrokT0Lx90fg%3D';
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _currentUserID = FirebaseAuth.instance.currentUser?.uid ?? '';
+    _loadFollowingUsers();
   }
 
-  void _showStartLiveSheet(BuildContext parentContext) {
-    final ImagePicker _picker = ImagePicker();
+  Future<void> _loadFollowingUsers() async {
+    if (_currentUserID.isEmpty) return;
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('user_following')
+          .doc(_currentUserID)
+          .get();
+
+      if (userDoc.exists && mounted) {
+        setState(() {
+          _followingUsers = List<String>.from(
+            userDoc.data()?['following'] ?? [],
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint('Erreur lors du chargement des utilisateurs suivis: $e');
+    }
+  }
+
+  void _showStartLiveBottomSheet() {
     final TextEditingController descController = TextEditingController();
+    final ImagePicker picker = ImagePicker();
 
     showModalBottomSheet(
       context: context,
@@ -169,17 +82,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       'Démarrer un live',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
+
                     Text(
                       'Description du live',
                       style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                         color: Colors.grey[800],
                       ),
                     ),
@@ -188,44 +102,52 @@ class _HomeScreenState extends State<HomeScreen> {
                       controller: descController,
                       maxLength: 100,
                       decoration: InputDecoration(
-                        hintText: 'Entrez une description...',
+                        hintText: 'Décrivez votre live...',
                         filled: true,
                         fillColor: Colors.grey.shade100,
                         contentPadding: const EdgeInsets.symmetric(
-                          vertical: 14,
+                          vertical: 16,
                           horizontal: 16,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: Theme.of(context).colorScheme.primary,
+                            width: 2,
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
+
                     Text(
                       'Miniature du live',
                       style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                         color: Colors.grey[800],
                       ),
                     ),
                     const SizedBox(height: 8),
                     GestureDetector(
                       onTap: () async {
-                        final pickedFile = await _picker.pickImage(
+                        final pickedFile = await picker.pickImage(
                           source: ImageSource.gallery,
                           imageQuality: 80,
                         );
                         if (pickedFile != null) {
                           setModalState(() {
-                            _pickedImage = File(pickedFile.path);
+                            _selectedThumbnail = File(pickedFile.path);
                           });
                         }
                       },
                       child: Container(
                         width: double.infinity,
-                        height: 150,
+                        height: 160,
                         decoration: BoxDecoration(
                           color: Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(12),
@@ -234,30 +156,39 @@ class _HomeScreenState extends State<HomeScreen> {
                             width: 1.5,
                           ),
                         ),
-                        child: _pickedImage != null
+                        child: _selectedThumbnail != null
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
                                 child: Image.file(
-                                  _pickedImage!,
+                                  _selectedThumbnail!,
                                   width: double.infinity,
-                                  height: 150,
+                                  height: 160,
                                   fit: BoxFit.cover,
                                 ),
                               )
                             : Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(
-                                    Icons.upload_file,
-                                    size: 32,
-                                    color: Colors.grey,
+                                  Icon(
+                                    Icons.add_photo_alternate,
+                                    size: 48,
+                                    color: Colors.grey[600],
                                   ),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 12),
                                   Text(
-                                    'Appuyez pour télécharger une image',
+                                    'Appuyez pour ajouter une miniature',
                                     style: TextStyle(
-                                      fontSize: 14,
+                                      fontSize: 16,
                                       color: Colors.grey[700],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Recommandé : 16:9 (1920x1080)',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
                                     ),
                                   ),
                                 ],
@@ -265,21 +196,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
+
                     SizedBox(
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           elevation: 4,
                           shadowColor: Colors.black54,
                         ),
-                        onPressed: () =>
-                            _handleStartLive(parentContext, descController),
+                        onPressed: () async {
+                          await _startLive(descController.text);
+                        },
                         child: const Text(
-                          'Commencer',
+                          'Commencer le live',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -297,258 +234,623 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildLiveCard(Map<String, dynamic> data) {
-    final String? thumbnailUrl = data['thumbnail'] as String?;
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 6,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          final currentUser = FirebaseAuth.instance.currentUser;
-          final userName = (currentUser?.displayName?.isNotEmpty ?? false)
-              ? currentUser!.displayName!
-              : 'Utilisateur';
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ZegoLivePage(
-                liveID: data['live_id'] ?? '',
-                userID: currentUser?.uid ?? '',
-                userName: userName,
-                isHost: false,
-              ),
-            ),
+  Future<void> _startLive(String description) async {
+    // Fermer le bottom sheet
+    Navigator.pop(context);
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // Récupérer les informations utilisateur
+    String userName = 'Utilisateur';
+    String userAvatar = '';
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (userDoc.exists) {
+        final userData = userDoc.data() ?? {};
+        userName = userData['username'] ?? 'Utilisateur';
+        userAvatar = userData['avatar'] ?? '';
+      }
+    } catch (e) {
+      debugPrint('Erreur lors de la récupération des données utilisateur: $e');
+    }
+
+    // Upload de la thumbnail vers Azure Blob Storage si une image est sélectionnée
+    String thumbnailUrl = '';
+    if (_selectedThumbnail != null) {
+      try {
+        final fileName =
+            '${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final String blobUrl =
+            'https://$azureStorageAccount.blob.core.windows.net/$azureContainer/$fileName?$azureSasToken';
+
+        final bytes = await _selectedThumbnail!.readAsBytes();
+        final response = await http.put(
+          Uri.parse(blobUrl),
+          headers: {
+            'x-ms-blob-type': 'BlockBlob',
+            'Content-Type': 'image/jpeg',
+          },
+          body: bytes,
+        );
+
+        if (response.statusCode == 201) {
+          thumbnailUrl =
+              'https://$azureStorageAccount.blob.core.windows.net/$azureContainer/$fileName';
+          debugPrint('Thumbnail uploadée avec succès: $thumbnailUrl');
+        } else {
+          debugPrint(
+            'Erreur upload Azure: ${response.statusCode} ${response.body}',
           );
+        }
+      } catch (e) {
+        debugPrint('Erreur upload thumbnail: $e');
+      }
+    }
+
+    // Générer un ID unique pour le live
+    final liveID = '${user.uid}_${DateTime.now().millisecondsSinceEpoch}';
+
+    // Utiliser la description fournie ou une description par défaut
+    final liveDescription = description.trim().isNotEmpty ? description.trim() : 'Mon Live';
+
+    try {
+      // Créer le document live dans Firestore
+      await FirebaseFirestore.instance.collection('lives').doc(liveID).set({
+        'live_id': liveID,
+        'live_url': '',
+        'id_host': user.uid,
+        'thumbnail': thumbnailUrl,
+        'desc': liveDescription,
+        'name_host': userName,
+        'avatar_host': userAvatar,
+        'id_chat': '',
+        'src_live': '',
+        'livestarttime': DateTime.now().millisecondsSinceEpoch,
+        'liveendtime': 0,
+        'is_signaler': false,
+        'ispremiumlive': false,
+        'totalgift': 0,
+        'max_connect': 0,
+        'invites': [],
+        'stats': {
+          'live_id': liveID,
+          'live_url': '',
+          'id_host': user.uid,
+          'tab_likes': [], // Correspond à tabLikes dans Livestats
+          'emojis': [],
+          'account': 0,
+          'likes': 0,
+          'gifters': [], // Correspond à List<Donateur> gifters
         },
-        child: SizedBox(
-          height: 160,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: thumbnailUrl != null && thumbnailUrl.isNotEmpty
-                    ? Image.network(thumbnailUrl, fit: BoxFit.cover)
-                    : Container(
-                        color: Colors.deepPurple[100],
-                        child: const Center(
-                          child: Icon(
-                            Icons.live_tv,
-                            size: 60,
-                            color: Colors.deepPurple,
-                          ),
-                        ),
-                      ),
-              ),
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.6),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 12,
-                bottom: 16,
-                right: 60,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      data['desc'] ?? 'Live',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black54,
-                            offset: Offset(0, 1),
-                            blurRadius: 2,
-                          ),
-                        ],
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 13,
-                          backgroundImage:
-                              (data['avatar_host'] != null &&
-                                  data['avatar_host'].toString().isNotEmpty)
-                              ? NetworkImage(data['avatar_host'])
-                              : null,
-                          backgroundColor: Colors.grey[300],
-                          child:
-                              (data['avatar_host'] == null ||
-                                  data['avatar_host'].toString().isEmpty)
-                              ? const Icon(
-                                  Icons.person,
-                                  size: 16,
-                                  color: Colors.grey,
-                                )
-                              : null,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          data['name_host'] ?? 'Utilisateur',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Positioned(
-                right: 16,
-                bottom: 16,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 2,
-                  ),
-                  onPressed: () {
-                    final currentUser = FirebaseAuth.instance.currentUser;
-                    final userName =
-                        (currentUser?.displayName?.isNotEmpty ?? false)
-                        ? currentUser!.displayName!
-                        : 'Utilisateur';
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ZegoLivePage(
-                          liveID: data['live_id'] ?? '',
-                          userID: currentUser?.uid ?? '',
-                          userName: userName,
-                          isHost: false,
-                        ),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    'Revoir',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                ),
-              ),
-            ],
+        'is_live': true,
+        'created_at': FieldValue.serverTimestamp(),
+      });
+
+      // Réinitialiser la thumbnail sélectionnée pour le prochain live
+      setState(() {
+        _selectedThumbnail = null;
+      });
+
+      // Naviguer vers la page de live
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ZegoLivePage(
+              liveID: liveID,
+              userID: user.uid,
+              userName: userName,
+              isHost: true,
+            ),
           ),
-        ),
-      ),
-    );
+        );
+      }
+    } catch (e) {
+      debugPrint('Erreur lors de la création du live: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors de la création du live'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Accueil'),
-          backgroundColor: theme.colorScheme.primary,
-          elevation: 4,
-          shadowColor: Colors.black45,
-          centerTitle: true,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Accueil'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() {});
+              _loadFollowingUsers();
+            },
+          ),
+        ],
+      ),
+      body: DefaultTabController(
+        length: 2,
+        child: Column(
+          children: [
+            // Onglets
+            Container(
+              color: Colors.grey.shade100,
+              child: const TabBar(
+                labelColor: Colors.purple,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Colors.purple,
+                tabs: [
+                  Tab(text: 'Pour vous', icon: Icon(Icons.explore)),
+                  Tab(text: 'Abonnements', icon: Icon(Icons.people)),
+                ],
+              ),
+            ),
+            // Contenu des onglets
+            Expanded(
+              child: TabBarView(
+                children: [_buildForYouTab(), _buildFollowingTab()],
+              ),
+            ),
+          ],
         ),
-        body: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Rechercher un profil...',
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  contentPadding: const EdgeInsets.symmetric(
-                    vertical: 14,
-                    horizontal: 16,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide.none,
+      ),
+      // Bouton flottant pour démarrer un live
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showStartLiveBottomSheet,
+        icon: const Icon(Icons.videocam),
+        label: const Text('Démarrer Live'),
+        backgroundColor: Colors.purple,
+        foregroundColor: Colors.white,
+      ),
+    );
+  }
+
+  Widget _buildForYouTab() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('lives')
+          .where('is_live', isEqualTo: false) // Lives terminés
+          .limit(20)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.history, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
+                  'Aucun live terminé récemment',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                SizedBox(height: 8),
+                Text(
+                  'Les lives terminés apparaîtront ici',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final lives = snapshot.data!.docs;
+
+        // Tri côté client par livestarttime (plus récents en premier)
+        lives.sort((a, b) {
+          final aData = a.data() as Map<String, dynamic>;
+          final bData = b.data() as Map<String, dynamic>;
+          final aTime = aData['livestarttime'] ?? 0;
+          final bTime = bData['livestarttime'] ?? 0;
+          return bTime.compareTo(aTime); // Décroissant
+        });
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            setState(() {});
+          },
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: lives.length,
+            itemBuilder: (context, index) {
+              final liveData = lives[index].data() as Map<String, dynamic>;
+              return PastLiveCard(
+                liveData: liveData,
+                currentUserID: _currentUserID,
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFollowingTab() {
+    if (_followingUsers.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.people_outline, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'Vous ne suivez personne',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 30),
-              const Text(
-                'Anciens lives',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('lives')
-                      .orderBy('livestarttime', descending: true)
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          'Aucun live trouvé.',
-                          style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Suivez des créateurs pour voir leurs anciens lives ici',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('lives')
+          .where('is_live', isEqualTo: false)
+          .where(
+            'id_host',
+            whereIn: _followingUsers.take(10).toList(),
+          ) // Firestore limite à 10
+          .limit(20)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.video_library_outlined,
+                  size: 64,
+                  color: Colors.grey,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Aucun live récent',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Les personnes que vous suivez n\'ont pas fait de live récemment',
+                  style: TextStyle(color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        final lives = snapshot.data!.docs;
+
+        // Tri côté client par livestarttime (plus récents en premier)
+        lives.sort((a, b) {
+          final aData = a.data() as Map<String, dynamic>;
+          final bData = b.data() as Map<String, dynamic>;
+          final aTime = aData['livestarttime'] ?? 0;
+          final bTime = bData['livestarttime'] ?? 0;
+          return bTime.compareTo(aTime); // Décroissant
+        });
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            setState(() {});
+            _loadFollowingUsers();
+          },
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: lives.length,
+            itemBuilder: (context, index) {
+              final liveData = lives[index].data() as Map<String, dynamic>;
+              return PastLiveCard(
+                liveData: liveData,
+                currentUserID: _currentUserID,
+                showFollowingBadge: true,
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class PastLiveCard extends StatelessWidget {
+  final Map<String, dynamic> liveData;
+  final String currentUserID;
+  final bool showFollowingBadge;
+
+  const PastLiveCard({
+    super.key,
+    required this.liveData,
+    required this.currentUserID,
+    this.showFollowingBadge = false,
+  });
+
+  String _formatDuration(int startTime, int? endTime) {
+    if (endTime == null || endTime == 0) return 'Durée inconnue';
+
+    final duration = Duration(milliseconds: endTime - startTime);
+    if (duration.inHours > 0) {
+      return '${duration.inHours}h ${duration.inMinutes.remainder(60)}min';
+    } else {
+      return '${duration.inMinutes}min';
+    }
+  }
+
+  String _formatTimeAgo(int startTime) {
+    final now = DateTime.now();
+    final startDateTime = DateTime.fromMillisecondsSinceEpoch(startTime);
+    final difference = now.difference(startDateTime);
+
+    if (difference.inDays > 0) {
+      return 'Il y a ${difference.inDays} jour${difference.inDays > 1 ? 's' : ''}';
+    } else if (difference.inHours > 0) {
+      return 'Il y a ${difference.inHours} heure${difference.inHours > 1 ? 's' : ''}';
+    } else if (difference.inMinutes > 0) {
+      return 'Il y a ${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''}';
+    } else {
+      return 'À l\'instant';
+    }
+  }
+
+  String _formatCount(int count) {
+    if (count < 1000) {
+      return count.toString();
+    } else if (count < 1000000) {
+      return '${(count / 1000).toStringAsFixed(1)}K';
+    } else {
+      return '${(count / 1000000).toStringAsFixed(1)}M';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final viewerCount = liveData['stats']?['account'] ?? 0;
+    final likeCount = liveData['stats']?['likes'] ?? 0;
+    final giftCount = liveData['totalgift'] ?? 0;
+    final thumbnail = liveData['thumbnail'] ?? '';
+    final title = liveData['desc'] ?? 'Live sans titre';
+    final hostName = liveData['name_host'] ?? 'Host inconnu';
+    final hostAvatar = liveData['avatar_host'] ?? '';
+    final startTime = liveData['livestarttime'] ?? 0;
+    final endTime = liveData['liveendtime'];
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header avec avatar et infos host
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundImage: hostAvatar.isNotEmpty
+                      ? NetworkImage(hostAvatar)
+                      : null,
+                  child: hostAvatar.isEmpty
+                      ? const Icon(Icons.person, size: 20)
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            hostName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          if (showFollowingBadge) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.blue,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'Suivi',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      Text(
+                        _formatTimeAgo(startTime),
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
                         ),
-                      );
-                    }
-
-                    final docs = snapshot.data!.docs;
-
-                    return ListView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: docs.length,
-                      itemBuilder: (context, index) {
-                        final data =
-                            docs[index].data()! as Map<String, dynamic>;
-                        return _buildLiveCard(data);
-                      },
-                    );
-                  },
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _showStartLiveSheet(context),
-          icon: const Icon(Icons.videocam),
-          label: const Text('Démarrer live'),
-          backgroundColor: theme.colorScheme.primary,
-          elevation: 6,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+
+          // Thumbnail du live
+          Container(
+            height: 180,
+            width: double.infinity,
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+            child: Stack(
+              children: [
+                // Image de fond
+                if (thumbnail.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      thumbnail,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          _buildDefaultThumbnail(),
+                    ),
+                  )
+                else
+                  _buildDefaultThumbnail(),
+
+                // Overlay avec badge TERMINÉ
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade700,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'TERMINÉ',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Durée du live
+                Positioned(
+                  bottom: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _formatDuration(startTime, endTime),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
+
+          // Titre et statistiques
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.visibility, size: 16, color: Colors.blue),
+                    Text(' ${_formatCount(viewerCount)} spectateurs'),
+                    const SizedBox(width: 16),
+                    Icon(Icons.favorite, size: 16, color: Colors.red),
+                    Text(' ${_formatCount(likeCount)}'),
+                    const SizedBox(width: 16),
+                    Icon(Icons.card_giftcard, size: 16, color: Colors.amber),
+                    Text(' ${_formatCount(giftCount)}'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDefaultThumbnail() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.grey.shade400, Colors.grey.shade600],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Center(
+        child: Icon(Icons.play_circle_outline, color: Colors.white, size: 50),
       ),
     );
   }
