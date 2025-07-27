@@ -37,7 +37,7 @@ class _StartLiveScreenState extends State<StartLiveScreen> {
           .collection('users')
           .doc(user.uid)
           .get();
-      
+
       final userName = userDoc.data()?['username'] ?? 'Utilisateur';
 
       // Créer le document du live
@@ -48,10 +48,11 @@ class _StartLiveScreenState extends State<StartLiveScreen> {
         'desc': _descController.text.trim(),
         'is_live': true,
         'livestarttime': DateTime.now().millisecondsSinceEpoch,
-        'stats': {
-          'account': 0,
-          'likes': 0,
-        },
+        'liveendtime': 0,
+        'has_recording': false,
+        'recording_url': '',
+        'is_recording': false,
+        'stats': {'account': 0, 'likes': 0},
       });
 
       if (mounted) {
@@ -70,9 +71,9 @@ class _StartLiveScreenState extends State<StartLiveScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}')));
       }
     } finally {
       if (mounted) {
@@ -84,10 +85,7 @@ class _StartLiveScreenState extends State<StartLiveScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Démarrer un live'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Démarrer un live'), centerTitle: true),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

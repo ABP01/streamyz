@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../utils/follow_manager.dart';
+import '../utils/navigation_helper.dart';
 
 class UserSearchWidget extends StatefulWidget {
   const UserSearchWidget({super.key});
@@ -129,15 +130,24 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
           child: ListTile(
             leading: Stack(
               children: [
-                CircleAvatar(
-                  radius: 25,
-                  backgroundImage:
-                      user['avatar'] != null && user['avatar'].isNotEmpty
-                      ? NetworkImage(user['avatar'])
-                      : null,
-                  child: user['avatar'] == null || user['avatar'].isEmpty
-                      ? const Icon(Icons.person)
-                      : null,
+                GestureDetector(
+                  onTap: () {
+                    NavigationHelper.navigateToUserProfile(
+                      context,
+                      userId: user['id'] ?? '',
+                      username: user['username'],
+                    );
+                  },
+                  child: CircleAvatar(
+                    radius: 25,
+                    backgroundImage:
+                        user['avatar'] != null && user['avatar'].isNotEmpty
+                        ? NetworkImage(user['avatar'])
+                        : null,
+                    child: user['avatar'] == null || user['avatar'].isEmpty
+                        ? const Icon(Icons.person)
+                        : null,
+                  ),
                 ),
                 // Indicateur en ligne
                 if (isOnline)

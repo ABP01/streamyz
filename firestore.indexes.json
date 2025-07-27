@@ -1,0 +1,46 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "lives",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "id_host",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "livestarttime",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "lives",
+      "queryScope": "COLLECTION", 
+      "fields": [
+        {
+          "fieldPath": "is_live",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "livestarttime",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "lives",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "has_recording",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "is",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ]
+} 

@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../models/live.dart';
 import '../models/user.dart';
+import '../utils/navigation_helper.dart';
 
 class LiveOverlayWidget extends StatefulWidget {
   final String liveID;
@@ -221,131 +222,10 @@ class _LiveOverlayWidgetState extends State<LiveOverlayWidget> {
   void _showHostProfile() {
     if (_hostUser == null) return;
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.6,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Profile info
-            CircleAvatar(
-              radius: 50,
-              backgroundImage: _hostUser!.avatar.isNotEmpty
-                  ? NetworkImage(_hostUser!.avatar)
-                  : null,
-              backgroundColor: Colors.grey[300],
-              child: _hostUser!.avatar.isEmpty
-                  ? const Icon(Icons.person, size: 50, color: Colors.white)
-                  : null,
-            ),
-            const SizedBox(height: 16),
-
-            Text(
-              _hostUser!.username,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-
-            if (_hostUser!.isPremium)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.amber,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'PREMIUM',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            const SizedBox(height: 20),
-
-            // Stats
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildStatColumn('${_hostUser!.followers.length}', 'Followers'),
-                _buildStatColumn('${_hostUser!.totalLiveGift}', 'Cadeaux'),
-                _buildStatColumn('$_viewerCount', 'En live'),
-              ],
-            ),
-            const SizedBox(height: 30),
-
-            // Action buttons
-            if (!widget.isHost) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _toggleFollow,
-                      icon: Icon(
-                        _isFollowing ? Icons.person_remove : Icons.person_add,
-                      ),
-                      label: Text(_isFollowing ? 'Ne plus suivre' : 'Suivre'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _isFollowing
-                            ? Colors.grey
-                            : Colors.blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _shareLive,
-                      icon: const Icon(Icons.share),
-                      label: const Text('Partager'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ] else ...[
-              ElevatedButton.icon(
-                onPressed: _shareLive,
-                icon: const Icon(Icons.share),
-                label: const Text('Partager mon live'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+    NavigationHelper.navigateToUserProfile(
+      context,
+      userId: _hostUser!.id,
+      username: _hostUser!.username,
     );
   }
 

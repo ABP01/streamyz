@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:zego_uikit_prebuilt_live_streaming/zego_uikit_prebuilt_live_streaming.dart';
 
+import '../utils/live_recording_manager.dart';
 import '../widgets/live_interactions_widget.dart';
 import '../widgets/live_overlay_widget.dart';
 import '../widgets/live_stats_widget.dart';
@@ -64,6 +65,11 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
 
     _loadHostID();
     _updateViewerCount();
+
+    // Démarrer l'enregistrement si c'est le host
+    if (widget.isHost) {
+      _startRecording();
+    }
   }
 
   Future<void> _loadHostID() async {
@@ -124,9 +130,29 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     }
   }
 
+  Future<void> _startRecording() async {
+    try {
+      final recordingStarted = await LiveRecordingManager.startRecording(
+        widget.liveID,
+      );
+      if (recordingStarted) {
+        debugPrint('Enregistrement démarré pour le live: ${widget.liveID}');
+      } else {
+        debugPrint('Échec du démarrage de l\'enregistrement');
+      }
+    } catch (e) {
+      debugPrint('Erreur lors du démarrage de l\'enregistrement: $e');
+    }
+  }
+
   Future<void> _endLiveIfHost() async {
     try {
       if (widget.isHost) {
+        // Arrêter l'enregistrement avant de terminer le live
+        if (LiveRecordingManager.isRecording()) {
+          await LiveRecordingManager.stopRecording(widget.liveID);
+        }
+
         await FirebaseFirestore.instance
             .collection('lives')
             .doc(widget.liveID)

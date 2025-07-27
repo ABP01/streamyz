@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../screens/zego_live_page.dart';
+import '../utils/navigation_helper.dart';
 
 class ExplorerScreen extends StatefulWidget {
   const ExplorerScreen({super.key});
@@ -91,7 +92,6 @@ class _ExplorerScreenState extends State<ExplorerScreen> {
             child: PageView.builder(
               controller: _pageController,
               scrollDirection: Axis.vertical,
-              reverse: true, // Défilement du bas vers le haut
               onPageChanged: (index) {
                 setState(() {
                   _currentPage = index;
@@ -186,39 +186,35 @@ class FullScreenLiveCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.black87, Colors.purple.shade900],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
       child: Stack(
         children: [
-          // Image de fond ou gradient
-          if (thumbnail.isNotEmpty)
-            Container(
-              width: double.infinity,
-              height: double.infinity,
-              child: Image.network(
-                thumbnail,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    _buildDefaultBackground(),
-              ),
-            )
-          else
-            _buildDefaultBackground(),
+          // Image de fond (thumbnail du live)
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            child: thumbnail.isNotEmpty
+                ? Image.network(
+                    thumbnail,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return _buildDefaultBackground();
+                    },
+                    errorBuilder: (context, error, stackTrace) =>
+                        _buildDefaultBackground(),
+                  )
+                : _buildDefaultBackground(),
+          ),
 
-          // Overlay sombre pour la lisibilité
+          // Overlay sombre pour la lisibilité du texte
           Container(
             width: double.infinity,
             height: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Colors.black.withOpacity(0.3),
-                  Colors.black.withOpacity(0.7),
+                  Colors.black.withOpacity(0.2),
+                  Colors.black.withOpacity(0.6),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -314,19 +310,26 @@ class FullScreenLiveCard extends StatelessWidget {
                       // Profil du host
                       Row(
                         children: [
-                          CircleAvatar(
-                            radius: 25,
-                            backgroundImage: hostAvatar.isNotEmpty
-                                ? NetworkImage(hostAvatar)
-                                : null,
-                            backgroundColor: Colors.purple,
-                            child: hostAvatar.isEmpty
-                                ? const Icon(
-                                    Icons.person,
-                                    color: Colors.white,
-                                    size: 30,
-                                  )
-                                : null,
+                          GestureDetector(
+                            onTap: () => NavigationHelper.navigateToUserProfile(
+                              context,
+                              userId: liveData['id_host'] ?? '',
+                              username: hostName,
+                            ),
+                            child: CircleAvatar(
+                              radius: 25,
+                              backgroundImage: hostAvatar.isNotEmpty
+                                  ? NetworkImage(hostAvatar)
+                                  : null,
+                              backgroundColor: Colors.purple,
+                              child: hostAvatar.isEmpty
+                                  ? const Icon(
+                                      Icons.person,
+                                      color: Colors.white,
+                                      size: 30,
+                                    )
+                                  : null,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(

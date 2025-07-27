@@ -7,6 +7,8 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 import '../screens/zego_live_page.dart';
+import '../utils/live_recording_manager.dart';
+import '../utils/navigation_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -297,7 +299,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final liveID = '${user.uid}_${DateTime.now().millisecondsSinceEpoch}';
 
     // Utiliser la description fournie ou une description par défaut
-    final liveDescription = description.trim().isNotEmpty ? description.trim() : 'Mon Live';
+    final liveDescription = description.trim().isNotEmpty
+        ? description.trim()
+        : 'Mon Live';
 
     try {
       // Créer le document live dans Firestore
@@ -318,6 +322,9 @@ class _HomeScreenState extends State<HomeScreen> {
         'totalgift': 0,
         'max_connect': 0,
         'invites': [],
+        'has_recording': false,
+        'recording_url': '',
+        'is_recording': false,
         'stats': {
           'live_id': liveID,
           'live_url': '',
@@ -420,26 +427,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildForYouTab() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('lives')
-          .where('is_live', isEqualTo: false) // Lives terminés
-          .limit(20)
-          .snapshots(),
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: LiveRecordingManager.getRecordedLives(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.history, size: 64, color: Colors.grey),
+                Icon(Icons.video_library, size: 64, color: Colors.grey),
                 SizedBox(height: 16),
                 Text(
-                  'Aucun live terminé récemment',
+                  'Aucun live enregistré',
                   style: TextStyle(
                     fontSize: 18,
                     color: Colors.grey,
@@ -448,35 +451,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'Les lives terminés apparaîtront ici',
+                  'Les lives enregistrés sur Azure apparaîtront ici',
                   style: TextStyle(color: Colors.grey),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
           );
         }
 
-        final lives = snapshot.data!.docs;
-
-        // Tri côté client par livestarttime (plus récents en premier)
-        lives.sort((a, b) {
-          final aData = a.data() as Map<String, dynamic>;
-          final bData = b.data() as Map<String, dynamic>;
-          final aTime = aData['livestarttime'] ?? 0;
-          final bTime = bData['livestarttime'] ?? 0;
-          return bTime.compareTo(aTime); // Décroissant
-        });
+        final recordedLives = snapshot.data!;
 
         return RefreshIndicator(
           onRefresh: () async {
-            setState(() {});
+            setState(() {}); // Force rebuild with new data
           },
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: lives.length,
+            itemCount: recordedLives.length,
             itemBuilder: (context, index) {
-              final liveData = lives[index].data() as Map<String, dynamic>;
-              return PastLiveCard(
+              final liveData = recordedLives[index];
+              return RecordedLiveCard(
                 liveData: liveData,
                 currentUserID: _currentUserID,
               );
@@ -666,14 +661,26 @@ class PastLiveCard extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundImage: hostAvatar.isNotEmpty
-                      ? NetworkImage(hostAvatar)
-                      : null,
-                  child: hostAvatar.isEmpty
-                      ? const Icon(Icons.person, size: 20)
-                      : null,
+                GestureDetector(
+                  onTap: () {
+                    final hostId = liveData['id_host'] ?? '';
+                    if (hostId.isNotEmpty) {
+                      NavigationHelper.navigateToUserProfile(
+                        context,
+                        userId: hostId,
+                        username: hostName,
+                      );
+                    }
+                  },
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundImage: hostAvatar.isNotEmpty
+                        ? NetworkImage(hostAvatar)
+                        : null,
+                    child: hostAvatar.isEmpty
+                        ? const Icon(Icons.person, size: 20)
+                        : null,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -851,6 +858,431 @@ class PastLiveCard extends StatelessWidget {
       ),
       child: const Center(
         child: Icon(Icons.play_circle_outline, color: Colors.white, size: 50),
+      ),
+    );
+  }
+}
+
+class RecordedLiveCard extends StatelessWidget {
+  final Map<String, dynamic> liveData;
+  final String currentUserID;
+
+  const RecordedLiveCard({
+    super.key,
+    required this.liveData,
+    required this.currentUserID,
+  });
+
+  String _formatDuration(int startTime, int? endTime) {
+    if (endTime == null || endTime == 0) return 'Durée inconnue';
+
+    final duration = Duration(milliseconds: endTime - startTime);
+    if (duration.inHours > 0) {
+      return '${duration.inHours}h ${duration.inMinutes.remainder(60)}min';
+    } else {
+      return '${duration.inMinutes}min';
+    }
+  }
+
+  String _formatTimeAgo(int startTime) {
+    final now = DateTime.now();
+    final startDateTime = DateTime.fromMillisecondsSinceEpoch(startTime);
+    final difference = now.difference(startDateTime);
+
+    if (difference.inDays > 0) {
+      return 'Il y a ${difference.inDays} jour${difference.inDays > 1 ? 's' : ''}';
+    } else if (difference.inHours > 0) {
+      return 'Il y a ${difference.inHours} heure${difference.inHours > 1 ? 's' : ''}';
+    } else if (difference.inMinutes > 0) {
+      return 'Il y a ${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''}';
+    } else {
+      return 'À l\'instant';
+    }
+  }
+
+  String _formatCount(int count) {
+    if (count < 1000) {
+      return count.toString();
+    } else if (count < 1000000) {
+      return '${(count / 1000).toStringAsFixed(1)}K';
+    } else {
+      return '${(count / 1000000).toStringAsFixed(1)}M';
+    }
+  }
+
+  void _showRecordingOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.play_circle_fill, color: Colors.green),
+              title: const Text('Regarder l\'enregistrement'),
+              onTap: () {
+                Navigator.pop(context);
+                _playRecording(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.share, color: Colors.blue),
+              title: const Text('Partager l\'enregistrement'),
+              onTap: () {
+                Navigator.pop(context);
+                _shareRecording(context);
+              },
+            ),
+            if (liveData['id_host'] == currentUserID) ...[
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('Supprimer l\'enregistrement'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteRecording(context);
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _playRecording(BuildContext context) {
+    final recordingUrl = liveData['secure_recording_url'] ?? '';
+    if (recordingUrl.isNotEmpty) {
+      // TODO: Implémenter le lecteur vidéo pour les enregistrements
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lecture de l\'enregistrement: ${liveData['desc']}'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  void _shareRecording(BuildContext context) {
+    final liveId = liveData['live_id'] ?? '';
+    final title = liveData['desc'] ?? 'Live enregistré';
+    final recordingUrl = 'streamyz://recording/$liveId';
+
+    // Utiliser le package share_plus pour partager
+    // Share.share('Regardez cet enregistrement: $title\n$recordingUrl');
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Fonctionnalité de partage bientôt disponible'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+
+  void _deleteRecording(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer l\'enregistrement'),
+        content: const Text(
+          'Êtes-vous sûr de vouloir supprimer cet enregistrement ? Cette action est irréversible.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final liveId = liveData['live_id'] ?? '';
+      final success = await LiveRecordingManager.deleteRecording(liveId);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? 'Enregistrement supprimé avec succès'
+                  : 'Erreur lors de la suppression',
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final viewerCount = liveData['stats']?['account'] ?? 0;
+    final likeCount = liveData['stats']?['likes'] ?? 0;
+    final giftCount = liveData['totalgift'] ?? 0;
+    final thumbnail = liveData['thumbnail'] ?? '';
+    final title = liveData['desc'] ?? 'Live sans titre';
+    final hostName = liveData['name_host'] ?? 'Host inconnu';
+    final hostAvatar = liveData['avatar_host'] ?? '';
+    final startTime = liveData['livestarttime'] ?? 0;
+    final endTime = liveData['liveendtime'];
+    final hasRecording = liveData['has_recording'] ?? false;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () => _showRecordingOptions(context),
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header avec avatar et infos host
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      final hostId = liveData['id_host'] ?? '';
+                      if (hostId.isNotEmpty) {
+                        NavigationHelper.navigateToUserProfile(
+                          context,
+                          userId: hostId,
+                          username: hostName,
+                        );
+                      }
+                    },
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundImage: hostAvatar.isNotEmpty
+                          ? NetworkImage(hostAvatar)
+                          : null,
+                      child: hostAvatar.isEmpty
+                          ? const Icon(Icons.person, size: 20)
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              hostName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'ENREGISTRÉ',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          _formatTimeAgo(startTime),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Thumbnail du live avec overlay de lecture
+            Container(
+              height: 180,
+              width: double.infinity,
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              child: Stack(
+                children: [
+                  // Image de fond
+                  if (thumbnail.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        thumbnail,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildDefaultThumbnail(),
+                      ),
+                    )
+                  else
+                    _buildDefaultThumbnail(),
+
+                  // Overlay avec gradient et bouton play
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.3),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Bouton play central
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.play_arrow,
+                        color: Colors.black,
+                        size: 40,
+                      ),
+                    ),
+                  ),
+
+                  // Badge enregistrement
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.videocam, color: Colors.white, size: 12),
+                          SizedBox(width: 4),
+                          Text(
+                            'ENREGISTRÉ',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Durée du live
+                  if (endTime != null && endTime > 0)
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          _formatDuration(startTime, endTime),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // Titre et statistiques
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.visibility, size: 16, color: Colors.blue),
+                      Text(' ${_formatCount(viewerCount)} spectateurs'),
+                      const SizedBox(width: 16),
+                      Icon(Icons.favorite, size: 16, color: Colors.red),
+                      Text(' ${_formatCount(likeCount)}'),
+                      const SizedBox(width: 16),
+                      Icon(Icons.card_giftcard, size: 16, color: Colors.amber),
+                      Text(' ${_formatCount(giftCount)}'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDefaultThumbnail() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.green.shade400, Colors.green.shade600],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Center(
+        child: Icon(Icons.videocam, color: Colors.white, size: 50),
       ),
     );
   }
