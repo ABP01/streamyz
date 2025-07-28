@@ -4,10 +4,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:streamyz/screens/auth_screen.dart';
 import 'package:streamyz/screens/start_live_screen.dart';
-import 'package:zego_uikit_prebuilt_live_streaming/zego_uikit_prebuilt_live_streaming.dart';
 
 import 'screens/main_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/zego_live_page.dart' as screens;
 import 'utils/online_status_manager.dart';
 import 'utils/permission_manager.dart';
 
@@ -145,11 +145,12 @@ class ExplorerScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => ZegoLivePage(
+                                builder: (_) => screens.ZegoLivePage(
                                   liveID: data['live_id'] ?? '',
                                   userID: currentUser.uid,
                                   userName: userName,
                                   isHost: false,
+                                  hostID: data['host_id'],
                                 ),
                               ),
                             );
@@ -411,11 +412,12 @@ class ProfileScreen extends StatelessWidget {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (_) => ZegoLivePage(
+                                          builder: (_) => screens.ZegoLivePage(
                                             liveID: live['live_id'] ?? '',
                                             userID: currentUser.uid,
                                             userName: userName,
                                             isHost: false,
+                                            hostID: live['host_id'],
                                           ),
                                         ),
                                       );
@@ -432,39 +434,6 @@ class ProfileScreen extends StatelessWidget {
                 );
               },
             ),
-    );
-  }
-}
-
-// Remplace le placeholder par la vraie page ZegoLive
-class ZegoLivePage extends StatelessWidget {
-  final String liveID;
-  final String userID;
-  final String userName;
-  final bool isHost;
-
-  const ZegoLivePage({
-    super.key,
-    required this.liveID,
-    required this.userID,
-    required this.userName,
-    required this.isHost,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: ZegoUIKitPrebuiltLiveStreaming(
-        appID: 1145966523,
-        appSign:
-            '718e87c3fe2843726ed28a6dd25197aac29eb8016d442cc84151c07b65e95d2d',
-        userID: userID,
-        userName: userName,
-        liveID: liveID,
-        config: isHost
-            ? ZegoUIKitPrebuiltLiveStreamingConfig.host()
-            : ZegoUIKitPrebuiltLiveStreamingConfig.audience(),
-      ),
     );
   }
 }

@@ -37,6 +37,7 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
   bool _hasError = false;
   bool _isOffline = false;
   bool _disposed = false;
+  bool _isEndingLive = false; // Flag pour éviter le double dialogue
   Timer? _recordingStatusTimer;
 
   @override
@@ -46,18 +47,32 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     // Capturer les erreurs Flutter globales de manière plus sûre
     FlutterError.onError = (FlutterErrorDetails details) {
       // Vérifier si le widget est encore monté avant de modifier l'état
-      if (mounted && !_disposed) {
+      if (mounted && !_disposed && !_isEndingLive) {
         // Si l'erreur provient de ZegoUIKit, marquer comme erreur
         if (details.toString().contains('zego_uikit') ||
             details.toString().contains(
+              'ZegoUIKitPrebuiltLiveStreamingState',
+            ) ||
+            details.toString().contains(
               'Null check operator used on a null value',
             ) ||
-            details.toString().contains('_debugCurrentBuildTarget')) {
+            details.toString().contains('_debugCurrentBuildTarget') ||
+            details.toString().contains('normalPage')) {
           // Utiliser un post-frame callback pour éviter les conflits de build
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && !_disposed) {
+            if (mounted && !_disposed && !_isEndingLive) {
+              debugPrint(
+                '🔴 Erreur ZegoUIKit détectée, basculement vers fallback',
+              );
               setState(() {
                 _hasError = true;
+              });
+
+              // Forcer la fermeture après un délai pour éviter les boucles
+              Future.delayed(const Duration(seconds: 2), () {
+                if (mounted && !_disposed) {
+                  Navigator.of(context).pop();
+                }
               });
             }
           });
@@ -78,7 +93,7 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
       _recordingStatusTimer = Timer.periodic(const Duration(seconds: 1), (
         timer,
       ) {
-        if (mounted && !_disposed) {
+        if (mounted && !_disposed && !_isEndingLive) {
           setState(() {
             // Trigger rebuild pour mettre à jour l'indicateur d'enregistrement
           });
@@ -275,27 +290,27 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
   }
 
   Future<void> _handleEndLive() async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Arrêter le live'),
-        content: const Text('Êtes-vous sûr de vouloir arrêter ce live ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Arrêter', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
+    if (_isEndingLive) return; // Éviter les appels multiples
 
-    if (result == true) {
+    setState(() {
+      _isEndingLive = true; // Marquer qu'on est en train de terminer
+    });
+
+    try {
+      // Arrêter l'enregistrement et mettre à jour Firestore
       await _endLiveIfHost();
+
+      // Donner un délai pour permettre à ZegoUIKit de se nettoyer
+      await Future.delayed(const Duration(milliseconds: 500));
+
       if (mounted) {
+        Navigator.of(context).pop(); // Quitter directement
+      }
+    } catch (e) {
+      debugPrint('Erreur lors de l\'arrêt du live: $e');
+      // En cas d'erreur, forcer la fermeture après un délai
+      if (mounted) {
+        await Future.delayed(const Duration(milliseconds: 300));
         Navigator.of(context).pop();
       }
     }
@@ -320,15 +335,20 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     // Configuration audio/vidéo
     config.audioVideoView.showAvatarInAudioMode = true;
 
+    // Permissions et fonctionnalités
+    config.turnOnCameraWhenJoining = true;
+    config.turnOnMicrophoneWhenJoining = true;
+    config.useSpeakerWhenJoining = true;
+
     // Masquer complètement la barre du haut de ZegoUIKit
     config.topMenuBar.showCloseButton = false;
     config.topMenuBar.height = 0;
     config.topMenuBar.padding = EdgeInsets.zero;
     config.topMenuBar.margin = EdgeInsets.zero;
 
-    // Configuration de la barre du bas pour garder les boutons essentiels
+    // Configuration de la barre du bas pour le host
     config.bottomMenuBar.showInRoomMessageButton =
-        false; // Désactiver le chat ZegoUIKit
+        false; // Désactiver le chat ZegoUIKit pour utiliser notre interface personnalisée
     config.bottomMenuBar.hostButtons = [
       ZegoLiveStreamingMenuBarButtonName.toggleMicrophoneButton,
       ZegoLiveStreamingMenuBarButtonName.toggleCameraButton,
@@ -361,18 +381,21 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
   ZegoUIKitPrebuiltLiveStreamingConfig _getAudienceConfig() {
     final config = ZegoUIKitPrebuiltLiveStreamingConfig.audience();
     config.audioVideoView.showAvatarInAudioMode = true;
+
+    // Permissions pour l'audience
+    config.turnOnCameraWhenJoining = false;
+    config.turnOnMicrophoneWhenJoining = false;
+    config.useSpeakerWhenJoining = true;
     // Masquer complètement la barre du haut de ZegoUIKit pour l'audience
     config.topMenuBar.showCloseButton = false;
     config.topMenuBar.height = 0;
     config.topMenuBar.padding = EdgeInsets.zero;
     config.topMenuBar.margin = EdgeInsets.zero;
-    // Configuration de la barre du bas - seulement le bouton micro pour l'audience
+    // Configuration de la barre du bas pour l'audience - aucun bouton ZegoUIKit
     config.bottomMenuBar.showInRoomMessageButton =
-        false; // Désactiver le chat ZegoUIKit
-    config.bottomMenuBar.audienceButtons = [
-      ZegoLiveStreamingMenuBarButtonName.toggleMicrophoneButton,
-    ];
-    config.bottomMenuBar.maxCount = 1;
+        false; // Désactiver le chat ZegoUIKit pour utiliser notre interface personnalisée
+    config.bottomMenuBar.audienceButtons = [];
+    config.bottomMenuBar.maxCount = 0;
     config.foreground = _buildCustomForeground();
     config.background = _buildCustomBackground();
     return config;
@@ -380,6 +403,11 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
 
   // Construire le foreground personnalisé avec l'interface de chat TikTok
   Widget _buildCustomForeground() {
+    // Si on est en train de terminer le live, retourner un container vide
+    if (_disposed || _isEndingLive) {
+      return Container();
+    }
+
     // Vérification plus robuste de l'hostID
     final hostID = _actualHostID ?? widget.hostID ?? widget.userID;
 
@@ -448,7 +476,10 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
             ),
           ),
         // Indicateur de statut d'enregistrement (si c'est le host)
-        if (widget.isHost && SimpleRecordingManager.isRecording())
+        if (widget.isHost &&
+            !_disposed &&
+            !_isEndingLive &&
+            SimpleRecordingManager.isRecording())
           Positioned(
             top: MediaQuery.of(context).padding.top + 110,
             left: 16,
@@ -516,10 +547,15 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     // Arrêter le timer de l'enregistrement
     _recordingStatusTimer?.cancel();
 
-    // Appeler _endLiveIfHost de manière asynchrone pour éviter le blocage
-    _endLiveIfHost().catchError((error) {
-      debugPrint('Erreur lors de la fermeture du live: $error');
-    });
+    // Appeler _endLiveIfHost seulement si on n'est pas déjà en train de terminer
+    if (!_isEndingLive) {
+      _endLiveIfHost().catchError((error) {
+        debugPrint('Erreur lors de la fermeture du live: $error');
+      });
+    }
+
+    // Marquer qu'on termine pour empêcher tout nouveau traitement
+    _isEndingLive = true;
 
     super.dispose();
   }
@@ -527,7 +563,7 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
   @override
   Widget build(BuildContext context) {
     // Vérifications de sécurité
-    if (_disposed) {
+    if (_disposed || _isEndingLive) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
@@ -543,36 +579,23 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     return WillPopScope(
       onWillPop: () async {
         try {
-          if (widget.isHost) {
-            // Pour le host, afficher une confirmation avant de quitter
-            final result = await showDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Arrêter le live'),
-                content: const Text(
-                  'Êtes-vous sûr de vouloir arrêter ce live ?',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text('Annuler'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    child: const Text(
-                      'Arrêter',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  ),
-                ],
-              ),
-            );
+          // Si on est déjà en train de terminer le live via le bouton, laisser passer
+          if (_isEndingLive) {
+            return true;
+          }
 
-            if (result == true) {
-              await _endLiveIfHost();
-              return true; // Permettre la sortie
-            }
-            return false; // Empêcher la sortie
+          if (widget.isHost) {
+            // Pour le host, arrêter directement sans dialogue
+            setState(() {
+              _isEndingLive = true;
+            });
+
+            await _endLiveIfHost();
+
+            // Donner un délai pour permettre à ZegoUIKit de se nettoyer
+            await Future.delayed(const Duration(milliseconds: 300));
+
+            return true; // Permettre la sortie
           } else {
             // Pour l'audience, quitter directement
             await _endLiveIfHost(); // Décrémenter le compteur de spectateurs
@@ -644,12 +667,12 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
-                  onPressed: _disposed
+                  onPressed: (_disposed || _isEndingLive)
                       ? null
                       : () {
                           // Utiliser un post-frame callback pour éviter les erreurs de build
                           WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (mounted && !_disposed) {
+                            if (mounted && !_disposed && !_isEndingLive) {
                               setState(() {
                                 _hasError = false; // Réinitialiser l'erreur
                                 _isOffline =

@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../models/chat.dart';
+import '../utils/firestore_helper.dart';
 
 class TikTokLiveInterface extends StatefulWidget {
   final String liveID;
@@ -66,10 +66,9 @@ class _TikTokLiveInterfaceState extends State<TikTokLiveInterface>
             if (change.type == DocumentChangeType.added && mounted) {
               final chat = Chat.fromMap(change.doc.data()!);
 
-              // Ajouter l'utilisateur au mappage s'il n'existe pas déjà
+              // Récupérer le vrai nom d'utilisateur depuis Firebase
               if (!_userNames.containsKey(chat.idUser)) {
-                _userNames[chat.idUser] =
-                    chat.idUser; // Par défaut, utiliser l'ID comme nom
+                _loadUserName(chat.idUser);
               }
 
               setState(() {
@@ -105,29 +104,32 @@ class _TikTokLiveInterfaceState extends State<TikTokLiveInterface>
   }
 
   void _startJoinNotifications() {
-    _joinTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
-      if (mounted && Random().nextBool()) {
-        _addJoinNotification();
-      }
-    });
+    // Notifications de rejoignement réelles supprimées
+    // Les vraies notifications peuvent être ajoutées via Firestore si nécessaire
   }
 
   void _addJoinNotification() {
-    final users = ['alexandra', 'margrth2', 'michael4', 'marclina'];
-    final randomUser = users[Random().nextInt(users.length)];
+    // Méthode conservée pour compatibilité mais ne génère plus de faux utilisateurs
+  }
 
-    setState(() {
-      _joinedUsers.add(randomUser);
-    });
-
-    // Retirer après 3 secondes
-    Future.delayed(const Duration(seconds: 3), () {
+  // Récupérer le vrai nom d'utilisateur depuis Firebase
+  Future<void> _loadUserName(String userId) async {
+    try {
+      final userName = await FirestoreHelper.getUserName(userId);
       if (mounted) {
         setState(() {
-          _joinedUsers.remove(randomUser);
+          _userNames[userId] = userName;
         });
       }
-    });
+    } catch (e) {
+      debugPrint('Erreur lors de la récupération du nom d\'utilisateur: $e');
+      // En cas d'erreur, utiliser l'ID comme fallback
+      if (mounted) {
+        setState(() {
+          _userNames[userId] = userId;
+        });
+      }
+    }
   }
 
   Future<void> _sendMessage() async {
