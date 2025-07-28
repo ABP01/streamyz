@@ -41,6 +41,12 @@ dependencies:
   image_picker: ^1.1.2
   share_plus: ^10.1.0
   http: ^1.1.0
+  
+  # Packages pour l'enregistrement natif simplifié
+  path_provider: ^2.1.1
+  permission_handler: ^11.1.0
+  shared_preferences: ^2.2.2
+  url_launcher: ^6.2.5
 
   # Firebase dependencies
 
@@ -68,9 +74,9 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/
+    - assets/videos/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

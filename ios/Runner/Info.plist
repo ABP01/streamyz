@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Streamyz a besoin d'accéder au microphone pour enregistrer l'audio des lives</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Streamyz sauvegarde les enregistrements de lives dans votre galerie</string>
 </dict>
 </plist>

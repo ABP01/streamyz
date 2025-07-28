@@ -9,10 +9,15 @@ import 'package:zego_uikit_prebuilt_live_streaming/zego_uikit_prebuilt_live_stre
 import 'screens/main_screen.dart';
 import 'screens/settings_screen.dart';
 import 'utils/online_status_manager.dart';
+import 'utils/permission_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  // Initialiser le gestionnaire de permissions dès le démarrage
+  await PermissionManager.initialize();
+
   runApp(const MyApp());
 }
 
@@ -63,9 +68,7 @@ class MyApp extends StatelessWidget {
               }
             },
           ),
-          routes: {
-            '/start_live': (context) => const StartLiveScreen(),
-          },
+          routes: {'/start_live': (context) => const StartLiveScreen()},
         );
       },
     );

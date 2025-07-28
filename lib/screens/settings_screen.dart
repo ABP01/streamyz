@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../main.dart';
+import '../utils/permission_manager.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -255,8 +256,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 const SizedBox(height: 20),
 
+                // Section Permissions
+                _buildSectionHeader('Permissions', Icons.security),
+                _buildSettingsCard([
+                  ListTile(
+                    title: const Text('État des permissions'),
+                    subtitle: const Text('Vérifier et gérer les autorisations'),
+                    leading: const Icon(Icons.verified_user),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _showPermissionsDialog(),
+                  ),
+                  ListTile(
+                    title: const Text('Ouvrir les paramètres'),
+                    subtitle: const Text(
+                      'Modifier les permissions dans les paramètres système',
+                    ),
+                    leading: const Icon(Icons.settings),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => PermissionManager.openSystemSettings(),
+                  ),
+                ]),
+
+                const SizedBox(height: 20),
+
                 // Section Sécurité
-                _buildSectionHeader('Sécurité', Icons.security),
+                _buildSectionHeader('Sécurité', Icons.lock),
                 _buildSettingsCard([
                   ListTile(
                     title: const Text('Changer le mot de passe'),
@@ -487,6 +511,171 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showPermissionsDialog() async {
+    try {
+      // Obtenir le résumé des permissions
+      final summary = await PermissionManager.getPermissionsSummary();
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.verified_user, color: Colors.blue),
+              SizedBox(width: 8),
+              Text('État des Permissions'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Permissions nécessaires pour Streamyz:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+
+                _buildPermissionStatus(
+                  '🎤 Microphone',
+                  summary['microphone'] == true,
+                  'Requis pour les lives audio',
+                ),
+                const SizedBox(height: 8),
+
+                _buildPermissionStatus(
+                  '📷 Caméra',
+                  summary['camera'] == true,
+                  'Requis pour les lives vidéo',
+                ),
+                const SizedBox(height: 8),
+
+                _buildPermissionStatus(
+                  '💾 Stockage',
+                  summary['storage'] == true,
+                  'Pour sauvegarder les enregistrements',
+                ),
+                const SizedBox(height: 16),
+
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: summary['hasEssential'] == true
+                        ? Colors.green.withOpacity(0.1)
+                        : Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: summary['hasEssential'] == true
+                          ? Colors.green
+                          : Colors.orange,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        summary['hasEssential'] == true
+                            ? Icons.check_circle
+                            : Icons.warning,
+                        color: summary['hasEssential'] == true
+                            ? Colors.green
+                            : Colors.orange,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          summary['hasEssential'] == true
+                              ? 'Toutes les permissions essentielles sont accordées !'
+                              : 'Certaines permissions manquent. L\'app fonctionnera en mode dégradé.',
+                          style: TextStyle(
+                            color: summary['hasEssential'] == true
+                                ? Colors.green.shade700
+                                : Colors.orange.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                if (summary['hasEssential'] != true) ...[
+                  const SizedBox(height: 12),
+                  const Text(
+                    '💡 Astuce: Vous pouvez accorder les permissions dans les paramètres système pour profiter de toutes les fonctionnalités.',
+                    style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            if (summary['hasEssential'] != true)
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  PermissionManager.openSystemSettings();
+                },
+                child: const Text('Paramètres'),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Fermer'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la vérification des permissions: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildPermissionStatus(
+    String title,
+    bool isGranted,
+    String description,
+  ) {
+    return Row(
+      children: [
+        Icon(
+          isGranted ? Icons.check_circle : Icons.cancel,
+          color: isGranted ? Colors.green : Colors.red,
+          size: 20,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+              Text(
+                description,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ],
+          ),
+        ),
+        Text(
+          isGranted ? 'Accordée' : 'Refusée',
+          style: TextStyle(
+            fontSize: 12,
+            color: isGranted ? Colors.green : Colors.red,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }
