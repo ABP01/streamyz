@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:streamyz/screens/auth_screen.dart';
 import 'package:streamyz/screens/start_live_screen.dart';
 
@@ -36,6 +37,9 @@ class MyApp extends StatelessWidget {
           title: 'Streamyz',
           theme: ThemeData.light().copyWith(
             useMaterial3: true,
+            textTheme: GoogleFonts.montserratTextTheme(
+              Theme.of(context).textTheme,
+            ),
             colorScheme: ColorScheme.fromSeed(
               seedColor: Colors.deepPurple,
               brightness: Brightness.light,
@@ -43,6 +47,9 @@ class MyApp extends StatelessWidget {
           ),
           darkTheme: ThemeData.dark().copyWith(
             useMaterial3: true,
+            textTheme: GoogleFonts.montserratTextTheme(
+              ThemeData.dark().textTheme,
+            ),
             colorScheme: ColorScheme.fromSeed(
               seedColor: Colors.deepPurple,
               brightness: Brightness.dark,
@@ -150,7 +157,7 @@ class ExplorerScreen extends StatelessWidget {
                                   userID: currentUser.uid,
                                   userName: userName,
                                   isHost: false,
-                                  hostID: data['host_id'],
+                                  hostID: data['id_host'], // Correction ici
                                 ),
                               ),
                             );
@@ -195,12 +202,6 @@ class ExplorerScreen extends StatelessWidget {
                                         style: const TextStyle(
                                           color: Colors.grey,
                                         ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        data['desc'] ?? '',
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),
@@ -417,7 +418,8 @@ class ProfileScreen extends StatelessWidget {
                                             userID: currentUser.uid,
                                             userName: userName,
                                             isHost: false,
-                                            hostID: live['host_id'],
+                                            hostID:
+                                                live['id_host'], // Correction ici
                                           ),
                                         ),
                                       );
