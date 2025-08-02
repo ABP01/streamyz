@@ -4,25 +4,39 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.CAMERA" />
     
-    <!-- Permissions pour l'enregistrement d'écran (moins restrictives) -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
-        android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
-        android:maxSdkVersion="32" />
+    <!-- Permissions pour l'enregistrement d'écran -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     
-    <!-- Permissions supplémentaires pour screen_capture_event -->
+    <!-- Permissions pour l'enregistrement vidéo réel avec flutter_screen_recording -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.CAPTURE_VIDEO_OUTPUT" 
-        tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.CAPTURE_AUDIO_OUTPUT" 
-        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    
+    <!-- Permissions pour le stockage -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    
+    <!-- Permissions pour FFmpeg et post-processing -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
     
     <application
         android:label="streamyz"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:requestLegacyExternalStorage="true">
+        android:requestLegacyExternalStorage="true"
+        android:allowBackup="true"
+        android:supportsRtl="true">
+        
+        <!-- Service pour l'enregistrement d'écran -->
+        <service
+            android:name="flutter_screen_recording.ScreenRecordingService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+            
         <activity
             android:name=".MainActivity"
             android:exported="true"

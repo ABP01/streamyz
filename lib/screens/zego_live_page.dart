@@ -6,12 +6,12 @@ import 'package:share_plus/share_plus.dart';
 import 'package:zego_uikit_prebuilt_live_streaming/zego_uikit_prebuilt_live_streaming.dart';
 
 import '../utils/permission_manager.dart';
-import '../utils/screen_recording_manager.dart';
+import '../utils/video_recording_manager.dart';
 import '../widgets/live_interactions_widget.dart';
 import '../widgets/live_overlay_widget.dart';
 import '../widgets/live_stats_widget.dart';
-import '../widgets/screen_recording_indicator_widget.dart';
 import '../widgets/tiktok_live_interface.dart';
+import '../widgets/video_recording_indicator_widget.dart';
 
 class ZegoLivePage extends StatefulWidget {
   final String liveID;
@@ -196,13 +196,13 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
         }
       }
 
-      final recordingStarted = await ScreenRecordingManager.startRecording(
+      final recordingStarted = await VideoRecordingManager.startRecording(
         widget.liveID,
       );
 
       if (recordingStarted) {
         debugPrint(
-          '✅ Enregistrement natif démarré pour le live: ${widget.liveID}',
+          '✅ Enregistrement vidéo démarré pour le live: ${widget.liveID}',
         );
         // Afficher une notification à l'utilisateur
         if (mounted) {
@@ -214,18 +214,18 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
                   const SizedBox(width: 8),
                   Text(
                     hasPermissions
-                        ? '🎥 Enregistrement démarré automatiquement !'
-                        : '📊 Capture des statistiques activée !',
+                        ? '🎥 Enregistrement vidéo HD démarré !'
+                        : '📊 Enregistrement en mode simplifié !',
                   ),
                 ],
               ),
               backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
       } else {
-        debugPrint('❌ Échec du démarrage de l\'enregistrement natif');
+        debugPrint('❌ Échec du démarrage de l\'enregistrement vidéo');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -233,7 +233,9 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
                 children: [
                   Icon(Icons.warning, color: Colors.white),
                   SizedBox(width: 8),
-                  Text('⚠️ Enregistrement indisponible - Live sans sauvegarde'),
+                  Text(
+                    '⚠️ Enregistrement vidéo indisponible - Live sans sauvegarde',
+                  ),
                 ],
               ),
               backgroundColor: Colors.red,
@@ -243,7 +245,7 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
         }
       }
     } catch (e) {
-      debugPrint('❌ Erreur lors du démarrage de l\'enregistrement: $e');
+      debugPrint('❌ Erreur lors du démarrage de l\'enregistrement vidéo: $e');
     }
   }
 
@@ -251,19 +253,19 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     try {
       if (widget.isHost) {
         // Arrêter l'enregistrement avant de terminer le live
-        if (ScreenRecordingManager.isRecording()) {
-          await ScreenRecordingManager.stopRecording(widget.liveID);
-          debugPrint('✅ Enregistrement arrêté et sauvegardé');
+        if (VideoRecordingManager.isRecording()) {
+          await VideoRecordingManager.stopRecording(widget.liveID);
+          debugPrint('✅ Enregistrement vidéo arrêté et en cours de traitement');
 
-          // Notifier l'utilisateur que l'enregistrement est sauvegardé
+          // Notifier l'utilisateur que l'enregistrement est en traitement
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text(
-                  '💾 Enregistrement sauvegardé ! Vous pourrez le regarder plus tard.',
+                  '🎬 Enregistrement en cours de traitement ! Vous pourrez le regarder bientôt.',
                 ),
                 backgroundColor: Colors.blue,
-                duration: Duration(seconds: 3),
+                duration: Duration(seconds: 4),
               ),
             );
           }
@@ -476,8 +478,8 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
               ),
             ),
           ),
-        // Indicateur d'enregistrement avec le nouveau widget
-        ScreenRecordingIndicatorWidget(
+        // Indicateur d'enregistrement vidéo avec le nouveau widget
+        VideoRecordingIndicatorWidget(
           liveID: widget.liveID,
           isHost: widget.isHost,
         ),
