@@ -50,6 +50,7 @@ dependencies:
   
   # Police Montserrat via Google Fonts
   google_fonts: ^6.1.0
+  screen_capture_event: ^1.2.0
 
   # Firebase dependencies
 

@@ -10,6 +10,14 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
         android:maxSdkVersion="32" />
     
+    <!-- Permissions supplémentaires pour screen_capture_event -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.CAPTURE_VIDEO_OUTPUT" 
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.CAPTURE_AUDIO_OUTPUT" 
+        tools:ignore="ProtectedPermissions" />
+    
     <application
         android:label="streamyz"
         android:name="${applicationName}"

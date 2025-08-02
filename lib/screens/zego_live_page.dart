@@ -6,10 +6,11 @@ import 'package:share_plus/share_plus.dart';
 import 'package:zego_uikit_prebuilt_live_streaming/zego_uikit_prebuilt_live_streaming.dart';
 
 import '../utils/permission_manager.dart';
-import '../utils/simple_recording_manager.dart';
+import '../utils/screen_recording_manager.dart';
 import '../widgets/live_interactions_widget.dart';
 import '../widgets/live_overlay_widget.dart';
 import '../widgets/live_stats_widget.dart';
+import '../widgets/screen_recording_indicator_widget.dart';
 import '../widgets/tiktok_live_interface.dart';
 
 class ZegoLivePage extends StatefulWidget {
@@ -195,7 +196,7 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
         }
       }
 
-      final recordingStarted = await SimpleRecordingManager.startRecording(
+      final recordingStarted = await ScreenRecordingManager.startRecording(
         widget.liveID,
       );
 
@@ -250,8 +251,8 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     try {
       if (widget.isHost) {
         // Arrêter l'enregistrement avant de terminer le live
-        if (SimpleRecordingManager.isRecording()) {
-          await SimpleRecordingManager.stopRecording(widget.liveID);
+        if (ScreenRecordingManager.isRecording()) {
+          await ScreenRecordingManager.stopRecording(widget.liveID);
           debugPrint('✅ Enregistrement arrêté et sauvegardé');
 
           // Notifier l'utilisateur que l'enregistrement est sauvegardé
@@ -475,51 +476,11 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
               ),
             ),
           ),
-        // Indicateur de statut d'enregistrement (si c'est le host)
-        if (widget.isHost &&
-            !_disposed &&
-            !_isEndingLive &&
-            SimpleRecordingManager.isRecording())
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 110,
-            left: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    SimpleRecordingManager.getRecordingStatusText(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        // Indicateur d'enregistrement avec le nouveau widget
+        ScreenRecordingIndicatorWidget(
+          liveID: widget.liveID,
+          isHost: widget.isHost,
+        ),
       ],
     );
   }
