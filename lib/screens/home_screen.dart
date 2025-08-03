@@ -5,13 +5,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../screens/recording_viewer_screen.dart';
+import '../screens/video_recording_viewer_screen.dart';
 import '../screens/zego_live_page.dart';
 import '../utils/navigation_helper.dart';
-import '../utils/permission_manager.dart';
-import '../utils/simple_recording_manager.dart';
+import '../utils/video_recording_manager.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -431,7 +429,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildForYouTab() {
     return FutureBuilder<List<Map<String, dynamic>>>(
-      future: SimpleRecordingManager.getRecordedLives(),
+      future: VideoRecordingManager.getRecordedLives(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -955,121 +953,23 @@ class RecordedLiveCard extends StatelessWidget {
 
   void _playRecording(BuildContext context) {
     final recordingUrl = liveData['recording_url'] ?? '';
-    final localPath = liveData['local_recording_path'] ?? '';
-    final title = liveData['desc'] ?? 'Live enregistré';
 
-    if (localPath.isNotEmpty) {
-      // Ouvrir le fichier local (HTML interactif)
-      _openLocalRecording(context, localPath, title);
-    } else if (recordingUrl.isNotEmpty) {
-      // Ouvrir l'URL Azure (HTML)
-      _openWebRecording(context, recordingUrl, title);
+    if (recordingUrl.isNotEmpty) {
+      // Naviguer vers le nouveau visualiseur vidéo
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => VideoRecordingViewerScreen(liveData: liveData),
+        ),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('❌ Aucun enregistrement disponible'),
+          content: Text('❌ Aucun enregistrement vidéo disponible'),
           backgroundColor: Colors.red,
         ),
       );
     }
-  }
-
-  void _openLocalRecording(
-    BuildContext context,
-    String filePath,
-    String title,
-  ) async {
-    try {
-      // Utiliser url_launcher pour ouvrir le fichier HTML local
-      final file = File(filePath);
-      if (await file.exists()) {
-        final uri = Uri.file(filePath);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('📱 Ouverture du recap: $title'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else {
-          _showRecordingDialog(
-            context,
-            title,
-            'Fichier sauvegardé localement mais impossible à ouvrir avec le navigateur par défaut.',
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Fichier local introuvable'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Erreur ouverture fichier local: $e');
-      _showRecordingDialog(
-        context,
-        title,
-        'Erreur lors de l\'ouverture du fichier local.',
-      );
-    }
-  }
-
-  void _openWebRecording(BuildContext context, String url, String title) async {
-    try {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('🌐 Ouverture du recap en ligne: $title'),
-            backgroundColor: Colors.blue,
-          ),
-        );
-      } else {
-        _showRecordingDialog(
-          context,
-          title,
-          'Impossible d\'ouvrir le lien. Vérifiez votre connexion Internet.',
-        );
-      }
-    } catch (e) {
-      debugPrint('Erreur ouverture URL: $e');
-      _showRecordingDialog(
-        context,
-        title,
-        'Erreur lors de l\'ouverture du lien.',
-      );
-    }
-  }
-
-  void _showRecordingDialog(
-    BuildContext context,
-    String title,
-    String message,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Recap: $title'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.info_outline, size: 48, color: Colors.blue),
-            const SizedBox(height: 16),
-            Text(message),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _shareRecording(BuildContext context) {
@@ -1112,7 +1012,7 @@ class RecordedLiveCard extends StatelessWidget {
 
     if (confirmed == true) {
       final liveId = liveData['live_id'] ?? '';
-      final success = await SimpleRecordingManager.deleteRecording(liveId);
+      final success = await VideoRecordingManager.deleteRecording(liveId);
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

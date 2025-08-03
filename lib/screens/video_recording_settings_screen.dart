@@ -338,7 +338,7 @@ class _VideoRecordingSettingsScreenState
           ),
           _buildFeatureItem(
             '⚡ Post-Processing',
-            'Amélioration automatique de la qualité avec FFmpeg',
+            'Traitement automatique après enregistrement',
             true,
           ),
           _buildFeatureItem(
