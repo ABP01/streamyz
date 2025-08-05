@@ -219,12 +219,14 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
                 children: [
                   const Icon(Icons.videocam, color: Colors.white),
                   const SizedBox(width: 8),
-                  Text(
-                    screenRecordingStarted
-                        ? '🎥 Enregistrement d\'écran démarré !'
-                        : hasPermissions
-                        ? '🎥 Enregistrement démarré automatiquement !'
-                        : '📊 Capture des statistiques activée !',
+                  Expanded(
+                    child: Text(
+                      screenRecordingStarted
+                          ? '🎥 Enregistrement d\'écran démarré !'
+                          : hasPermissions
+                          ? '🎥 Enregistrement démarré automatiquement !'
+                          : '📊 Capture des statistiques activée !',
+                    ),
                   ),
                 ],
               ),

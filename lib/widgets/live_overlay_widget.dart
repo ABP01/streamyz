@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../models/live.dart';
 import '../models/user.dart';
 import '../utils/navigation_helper.dart';
 import 'screen_recording_indicator.dart';
@@ -32,7 +31,6 @@ class LiveOverlayWidget extends StatefulWidget {
 class _LiveOverlayWidgetState extends State<LiveOverlayWidget> {
   bool _isFollowing = false;
   User? _hostUser;
-  Live? _liveData;
   int _viewerCount = 0;
 
   @override
@@ -69,9 +67,8 @@ class _LiveOverlayWidgetState extends State<LiveOverlayWidget> {
           .get();
 
       if (doc.exists) {
-        setState(() {
-          _liveData = Live.fromMap(doc.data()!);
-        });
+        // Live data loaded successfully
+        debugPrint('Live data loaded for ${widget.liveID}');
       }
     } catch (e) {
       debugPrint('Erreur lors du chargement des données du live: $e');
@@ -230,19 +227,6 @@ class _LiveOverlayWidgetState extends State<LiveOverlayWidget> {
     );
   }
 
-  Widget _buildStatColumn(String value, String label) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-      ],
-    );
-  }
-
   void _showMoreOptions() {
     showModalBottomSheet(
       context: context,
@@ -346,98 +330,107 @@ class _LiveOverlayWidgetState extends State<LiveOverlayWidget> {
                     children: [
                       CircleAvatar(
                         radius: 20,
-                    backgroundImage: _hostUser?.avatar.isNotEmpty == true
-                        ? NetworkImage(_hostUser!.avatar)
-                        : null,
-                    backgroundColor: Colors.grey[300],
-                    child: _hostUser?.avatar.isEmpty != false
-                        ? const Icon(
-                            Icons.person,
-                            size: 20,
-                            color: Colors.white,
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _hostUser?.username ?? 'Host',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
+                        backgroundImage: _hostUser?.avatar.isNotEmpty == true
+                            ? NetworkImage(_hostUser!.avatar)
+                            : null,
+                        backgroundColor: Colors.grey[300],
+                        child: _hostUser?.avatar.isEmpty != false
+                            ? const Icon(
+                                Icons.person,
+                                size: 20,
+                                color: Colors.white,
+                              )
+                            : null,
                       ),
-                      Text(
-                        '$_viewerCount spectateurs',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _hostUser?.username ?? 'Host',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            '$_viewerCount spectateurs',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  if (!widget.isHost) ...[
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: _toggleFollow,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _isFollowing ? Colors.grey : Colors.blue,
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Text(
-                          _isFollowing ? 'Suivi' : 'Suivre',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                      if (!widget.isHost) ...[
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: _toggleFollow,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _isFollowing ? Colors.grey : Colors.blue,
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: Text(
+                              _isFollowing ? 'Suivi' : 'Suivre',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          const Spacer(),
-          // Bouton de fermeture pour l'audience
-          if (!widget.isHost) ...[
-            GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: Container(
-                padding: const EdgeInsets.all(9),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
-                  shape: BoxShape.circle,
+                      ],
+                    ],
+                  ),
                 ),
-                child: const Icon(Icons.close, color: Colors.white, size: 24),
               ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          // Menu options
-          GestureDetector(
-            onTap: _showMoreOptions,
-            child: Container(
-              padding: const EdgeInsets.all(9),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                shape: BoxShape.circle,
+              const Spacer(),
+              // Bouton de fermeture pour l'audience
+              if (!widget.isHost) ...[
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              // Menu options
+              GestureDetector(
+                onTap: _showMoreOptions,
+                child: Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.more_vert,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
               ),
-              child: const Icon(Icons.more_vert, color: Colors.white, size: 24),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
         // Indicateur d'enregistrement d'écran
         ScreenRecordingIndicator(liveId: widget.liveID),
         // Statut compact d'enregistrement en bas à gauche

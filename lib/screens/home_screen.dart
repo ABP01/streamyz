@@ -7,10 +7,8 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../screens/recording_viewer_screen.dart';
 import '../screens/zego_live_page.dart';
 import '../utils/navigation_helper.dart';
-import '../utils/permission_manager.dart';
 import '../utils/simple_recording_manager.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -29,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const String azureStorageAccount = 'streamyzstorage';
   static const String azureContainer = 'thumbnails';
   static const String azureSasToken =
-      'sp=racwdl&st=2025-07-23T14:18:12Z&se=2025-08-31T22:33:12Z&sv=2024-11-04&sr=c&sig=u7jROdJBpryF%2BLjk9jAVahnbk%2FiEOUPZrokT0Lx90fg%3D';
+      'sp=racwdl&st=2025-08-05T16:30:12Z&se=2025-09-30T00:45:12Z&sv=2024-11-04&sr=c&sig=Vu%2BjnQg8vv3VebczR0Lb2mm4p75X%2FwfFO2jzSIS%2BPVk%3D';
 
   @override
   void initState() {
