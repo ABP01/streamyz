@@ -108,14 +108,14 @@ Permissions: read, add, create, write, delete, list
 
 ```mermaid
 graph TD
-    A[Utilisateur démarre live] --> B[RealRecordingManager.startRecording]
+    A[Utilisateur démarre live] --> B[ScreenRecordingManager.startRecording]
     B --> C[Demande permissions]
-    C --> D[FlutterScreenRecording.startRecordScreen]
+    C --> D[ScreenRecorderController.start]
     D --> E[🔴 Enregistrement en cours...]
     E --> F[Live se déroule normalement]
     F --> G[Utilisateur arrête live]
-    G --> H[FlutterScreenRecording.stopRecordScreen]
-    H --> I[Récupération fichier MP4]
+    G --> H[ScreenRecorderController.stop]
+    H --> I[Récupération fichier réel]
     I --> J[Lecture des bytes vidéo]
     J --> K[Upload vers Azure livespasses]
     K --> L[Mise à jour Firestore]

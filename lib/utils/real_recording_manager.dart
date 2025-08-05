@@ -5,7 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'azure_storage_service.dart';
 
 /// Gestionnaire d'enregistrement réel d'écran
-/// Version alternative sans dépendance flutter_screen_recording (problème de build)
+/// Utilise uniquement screen_recorder pour la capture d'écran
 /// Crée des enregistrements détaillés avec métadonnées complètes
 class RealRecordingManager {
   static bool _isRecording = false;

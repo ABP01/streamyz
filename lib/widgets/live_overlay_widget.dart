@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../models/live.dart';
 import '../models/user.dart';
 import '../utils/navigation_helper.dart';
+import 'screen_recording_indicator.dart';
 
 class LiveOverlayWidget extends StatefulWidget {
   final String liveID;
@@ -322,26 +323,29 @@ class _LiveOverlayWidgetState extends State<LiveOverlayWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 10,
-      left: 16,
-      right: 16,
-      child: Row(
-        children: [
-          // Profil du host
-          GestureDetector(
-            onTap: _showHostProfile,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(
-                    radius: 20,
+    return Stack(
+      children: [
+        // Overlay principal
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 10,
+          left: 16,
+          right: 16,
+          child: Row(
+            children: [
+              // Profil du host
+              GestureDetector(
+                onTap: _showHostProfile,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
                     backgroundImage: _hostUser?.avatar.isNotEmpty == true
                         ? NetworkImage(_hostUser!.avatar)
                         : null,
@@ -434,6 +438,15 @@ class _LiveOverlayWidgetState extends State<LiveOverlayWidget> {
           ),
         ],
       ),
+        // Indicateur d'enregistrement d'écran
+        ScreenRecordingIndicator(liveId: widget.liveID),
+        // Statut compact d'enregistrement en bas à gauche
+        Positioned(
+          bottom: 100,
+          left: 16,
+          child: CompactRecordingStatus(liveId: widget.liveID),
+        ),
+      ],
     );
   }
 }

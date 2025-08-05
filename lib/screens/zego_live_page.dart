@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:zego_uikit_prebuilt_live_streaming/zego_uikit_prebuilt_live_streaming.dart';
 
 import '../utils/permission_manager.dart';
+import '../utils/screen_recording_service.dart';
 import '../utils/simple_recording_manager.dart';
 import '../widgets/live_interactions_widget.dart';
 import '../widgets/live_overlay_widget.dart';
@@ -199,9 +200,16 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
         widget.liveID,
       );
 
-      if (recordingStarted) {
+      // Démarrer aussi l'enregistrement d'écran en parallèle
+      final screenRecordingStarted =
+          await ScreenRecordingService.startScreenRecording(widget.liveID);
+
+      if (recordingStarted || screenRecordingStarted) {
         debugPrint(
           '✅ Enregistrement natif démarré pour le live: ${widget.liveID}',
+        );
+        debugPrint(
+          '✅ Enregistrement d\'écran: ${screenRecordingStarted ? 'activé' : 'échec'}',
         );
         // Afficher une notification à l'utilisateur
         if (mounted) {
@@ -212,13 +220,17 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
                   const Icon(Icons.videocam, color: Colors.white),
                   const SizedBox(width: 8),
                   Text(
-                    hasPermissions
+                    screenRecordingStarted
+                        ? '🎥 Enregistrement d\'écran démarré !'
+                        : hasPermissions
                         ? '🎥 Enregistrement démarré automatiquement !'
                         : '📊 Capture des statistiques activée !',
                   ),
                 ],
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: screenRecordingStarted
+                  ? Colors.blue
+                  : Colors.green,
               duration: const Duration(seconds: 2),
             ),
           );
@@ -253,19 +265,25 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
         if (SimpleRecordingManager.isRecording()) {
           await SimpleRecordingManager.stopRecording(widget.liveID);
           debugPrint('✅ Enregistrement arrêté et sauvegardé');
+        }
 
-          // Notifier l'utilisateur que l'enregistrement est sauvegardé
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  '💾 Enregistrement sauvegardé ! Vous pourrez le regarder plus tard.',
-                ),
-                backgroundColor: Colors.blue,
-                duration: Duration(seconds: 3),
+        // Arrêter aussi l'enregistrement d'écran s'il est actif
+        if (ScreenRecordingService.isRecording()) {
+          await ScreenRecordingService.stopScreenRecording(widget.liveID);
+          debugPrint('✅ Enregistrement d\'écran arrêté et uploadé vers Azure');
+        }
+
+        // Notifier l'utilisateur que l'enregistrement est sauvegardé
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                '💾 Enregistrement sauvegardé ! Vous pourrez le regarder plus tard.',
               ),
-            );
-          }
+              backgroundColor: Colors.blue,
+              duration: Duration(seconds: 3),
+            ),
+          );
         }
 
         await FirebaseFirestore.instance

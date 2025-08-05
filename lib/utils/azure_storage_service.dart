@@ -6,7 +6,7 @@ class AzureStorageService {
   static const String _storageAccount = 'streamyzstorage';
   static const String _containerName = 'livespasses';
   static const String _sasToken =
-      'sp=racwdl&st=2025-07-28T09:47:19Z&se=2025-08-31T18:02:19Z&sv=2024-11-04&sr=c&sig=KQ1F1EhtCdXCBYDRV5SK9U0bc9Mgp6j5z0FPuD2yGuw%3D';
+      'sp=racwdl&st=2025-08-05T15:05:18Z&se=2025-09-02T23:20:18Z&sv=2024-11-04&sr=c&sig=scpTSLuwrOiLBf0UQWVOvulFhZWZQxxaWtOyK7ZpL5g%3D';
 
   static String get _baseUrl =>
       'https://$_storageAccount.blob.core.windows.net/$_containerName';
