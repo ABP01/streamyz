@@ -112,12 +112,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       try {
         final fileName =
             '${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final String containerSasUrl =
-            'https://streamyzstorage.blob.core.windows.net/avatars?sp=racwdl&st=2025-07-27T19:19:54Z&se=2025-08-31T03:34:54Z&sv=2024-11-04&sr=c&sig=FTSwQcmUM3JtyuqxIoH9UshRKjdcABwwyhlI%2FWSppvM%3D';
-        final String blobUrl = containerSasUrl.replaceFirst(
-          '?sp=',
-          '/$fileName?sp=',
-        );
+        // Nouveau SAS/URL Azure fourni pour l'avatar
+        final String blobUrl =
+            'https://streamyzstorage.blob.core.windows.net/avatars/$fileName?sp=racwdl&st=2025-08-08T16:26:26Z&se=2025-08-31T00:41:26Z&sv=2024-11-04&sr=c&sig=5G8sR91Zgoj5nS12zmnL573iBCyu2udQmuhlc6c4hyE%3D';
 
         final bytes = await _avatarFile!.readAsBytes();
         final request = await HttpClient().putUrl(Uri.parse(blobUrl));

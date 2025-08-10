@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:zego_uikit_prebuilt_live_streaming/zego_uikit_prebuilt_live_streaming.dart';
 
-import '../utils/permission_manager.dart';
-import '../utils/simple_recording_manager.dart';
 import '../widgets/live_interactions_widget.dart';
 import '../widgets/live_overlay_widget.dart';
 import '../widgets/live_stats_widget.dart';
@@ -38,7 +36,6 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
   bool _isOffline = false;
   bool _disposed = false;
   bool _isEndingLive = false; // Flag pour éviter le double dialogue
-  Timer? _recordingStatusTimer;
 
   @override
   void initState() {
@@ -84,22 +81,6 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
 
     _loadHostID();
     _updateViewerCount();
-
-    // Démarrer l'enregistrement si c'est le host
-    if (widget.isHost) {
-      _startRecording();
-
-      // Démarrer un timer pour mettre à jour l'affichage de l'enregistrement
-      _recordingStatusTimer = Timer.periodic(const Duration(seconds: 1), (
-        timer,
-      ) {
-        if (mounted && !_disposed && !_isEndingLive) {
-          setState(() {
-            // Trigger rebuild pour mettre à jour l'indicateur d'enregistrement
-          });
-        }
-      });
-    }
   }
 
   Future<void> _loadHostID() async {
@@ -160,113 +141,10 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     }
   }
 
-  Future<void> _startRecording() async {
-    try {
-      // Vérifier les permissions sans les demander
-      final hasPermissions = await PermissionManager.hasEssentialPermissions();
-
-      if (!hasPermissions) {
-        // Afficher un message informatif au lieu de redemander
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.white),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Certaines permissions manquent - Enregistrement en mode simplifié',
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 3),
-              action: SnackBarAction(
-                label: 'Paramètres',
-                textColor: Colors.white,
-                onPressed: () {
-                  PermissionManager.openSystemSettings();
-                },
-              ),
-            ),
-          );
-        }
-      }
-
-      final recordingStarted = await SimpleRecordingManager.startRecording(
-        widget.liveID,
-      );
-
-      if (recordingStarted) {
-        debugPrint(
-          '✅ Enregistrement natif démarré pour le live: ${widget.liveID}',
-        );
-        // Afficher une notification à l'utilisateur
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.videocam, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Text(
-                    hasPermissions
-                        ? '🎥 Enregistrement démarré automatiquement !'
-                        : '📊 Capture des statistiques activée !',
-                  ),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      } else {
-        debugPrint('❌ Échec du démarrage de l\'enregistrement natif');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.warning, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('⚠️ Enregistrement indisponible - Live sans sauvegarde'),
-                ],
-              ),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('❌ Erreur lors du démarrage de l\'enregistrement: $e');
-    }
-  }
-
   Future<void> _endLiveIfHost() async {
     try {
       if (widget.isHost) {
         // Arrêter l'enregistrement avant de terminer le live
-        if (SimpleRecordingManager.isRecording()) {
-          await SimpleRecordingManager.stopRecording(widget.liveID);
-          debugPrint('✅ Enregistrement arrêté et sauvegardé');
-
-          // Notifier l'utilisateur que l'enregistrement est sauvegardé
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  '💾 Enregistrement sauvegardé ! Vous pourrez le regarder plus tard.',
-                ),
-                backgroundColor: Colors.blue,
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-        }
 
         await FirebaseFirestore.instance
             .collection('lives')
@@ -476,50 +354,6 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
             ),
           ),
         // Indicateur de statut d'enregistrement (si c'est le host)
-        if (widget.isHost &&
-            !_disposed &&
-            !_isEndingLive &&
-            SimpleRecordingManager.isRecording())
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 110,
-            left: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    SimpleRecordingManager.getRecordingStatusText(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
       ],
     );
   }
@@ -545,7 +379,6 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     FlutterError.onError = FlutterError.presentError;
 
     // Arrêter le timer de l'enregistrement
-    _recordingStatusTimer?.cancel();
 
     // Appeler _endLiveIfHost seulement si on n'est pas déjà en train de terminer
     if (!_isEndingLive) {

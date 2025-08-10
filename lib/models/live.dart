@@ -18,7 +18,6 @@ class Live {
   final int maxConnect;
   final List<String> invites;
   final Livestats stats;
-  final String recordingUrl; // URL de l'enregistrement sur Azure Blob Storage
   final bool isLive; // Statut du live (en cours ou terminé)
 
   Live({
@@ -39,7 +38,6 @@ class Live {
     required this.maxConnect,
     required this.invites,
     required this.stats,
-    this.recordingUrl = '',
     this.isLive = false,
   });
 
@@ -61,7 +59,6 @@ class Live {
     maxConnect: map['max_connect'] ?? 0,
     invites: List<String>.from(map['invites'] ?? []),
     stats: Livestats.fromMap(map['stats'] ?? {}),
-    recordingUrl: map['recording_url'] ?? '',
     isLive: map['is_live'] ?? false,
   );
 
@@ -83,7 +80,6 @@ class Live {
     'max_connect': maxConnect,
     'invites': invites,
     'stats': stats.toMap(),
-    'recording_url': recordingUrl,
     'is_live': isLive,
   };
 }

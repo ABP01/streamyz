@@ -49,9 +49,6 @@ class _StartLiveScreenState extends State<StartLiveScreen> {
         'is_live': true,
         'livestarttime': DateTime.now().millisecondsSinceEpoch,
         'liveendtime': 0,
-        'has_recording': false,
-        'recording_url': '',
-        'is_recording': false,
         'stats': {'account': 0, 'likes': 0},
       });
 

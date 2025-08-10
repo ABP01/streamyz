@@ -559,7 +559,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _buildPermissionStatus(
                   '💾 Stockage',
                   summary['storage'] == true,
-                  'Pour sauvegarder les enregistrements',
+                  'Requis pour les fonctionnalités de stockage',
                 ),
                 const SizedBox(height: 16),
 
