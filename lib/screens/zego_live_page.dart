@@ -225,16 +225,19 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     config.topMenuBar.margin = EdgeInsets.zero;
 
     // Configuration de la barre du bas pour le host
-    config.bottomMenuBar.showInRoomMessageButton =
-        false; // Désactiver le chat ZegoUIKit pour utiliser notre interface personnalisée
+    config.bottomMenuBar.showInRoomMessageButton = false;
     config.bottomMenuBar.hostButtons = [
       ZegoLiveStreamingMenuBarButtonName.toggleMicrophoneButton,
       ZegoLiveStreamingMenuBarButtonName.toggleCameraButton,
       ZegoLiveStreamingMenuBarButtonName.switchCameraButton,
+      ZegoLiveStreamingMenuBarButtonName.leaveButton,
     ];
-    config.bottomMenuBar.maxCount = 3;
+    config.bottomMenuBar.maxCount = 4;
 
-    // Interface personnalisée
+    // Configuration du style des boutons pour s'assurer qu'ils sont visibles
+    config.bottomMenuBar.backgroundColor = Colors.black.withOpacity(0.3);
+
+    // Interface personnalisée - s'assurer que les boutons ZegoUIKit restent visibles
     config.foreground = _buildCustomForeground();
     config.background = _buildCustomBackground();
 
@@ -269,11 +272,15 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     config.topMenuBar.height = 0;
     config.topMenuBar.padding = EdgeInsets.zero;
     config.topMenuBar.margin = EdgeInsets.zero;
-    // Configuration de la barre du bas pour l'audience - aucun bouton ZegoUIKit
-    config.bottomMenuBar.showInRoomMessageButton =
-        false; // Désactiver le chat ZegoUIKit pour utiliser notre interface personnalisée
-    config.bottomMenuBar.audienceButtons = [];
-    config.bottomMenuBar.maxCount = 0;
+    // Configuration de la barre du bas pour l'audience
+    config.bottomMenuBar.showInRoomMessageButton = false;
+    config.bottomMenuBar.audienceButtons = [
+      ZegoLiveStreamingMenuBarButtonName.leaveButton,
+    ];
+    config.bottomMenuBar.maxCount = 1;
+
+    // Configuration du style des boutons pour l'audience
+    config.bottomMenuBar.backgroundColor = Colors.black.withOpacity(0.3);
     config.foreground = _buildCustomForeground();
     config.background = _buildCustomBackground();
     return config;
@@ -292,11 +299,18 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     return Stack(
       children: [
         // Interface TikTok complète (messages + chat en bas) - synchronisé avec Firestore
-        TikTokLiveInterface(
-          liveID: widget.liveID,
-          userID: widget.userID,
-          userName: widget.userName,
-          isHost: widget.isHost,
+        // Positionner en haut pour laisser de l'espace pour les boutons ZegoUIKit en bas
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 80, // Laisser de l'espace pour les boutons ZegoUIKit
+          child: TikTokLiveInterface(
+            liveID: widget.liveID,
+            userID: widget.userID,
+            userName: widget.userName,
+            isHost: widget.isHost,
+          ),
         ),
 
         // Overlay avec les informations du host (en haut)
