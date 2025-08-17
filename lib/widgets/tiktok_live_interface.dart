@@ -169,7 +169,9 @@ class _TikTokLiveInterfaceState extends State<TikTokLiveInterface>
         Positioned(
           left: 16,
           right: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 120,
+          bottom:
+              MediaQuery.of(context).viewInsets.bottom +
+              140, // Plus d'espace pour le champ de saisie
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -199,7 +201,7 @@ class _TikTokLiveInterfaceState extends State<TikTokLiveInterface>
         Positioned(
           left: 0,
           right: 0,
-          bottom: 0,
+          bottom: 0, // Positionner en bas de l'écran disponible
           child: Container(
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom + 16,

@@ -21,15 +21,12 @@ config.bottomMenuBar.hostButtons = [
   ZegoLiveStreamingMenuBarButtonName.toggleMicrophoneButton,
   ZegoLiveStreamingMenuBarButtonName.toggleCameraButton,
   ZegoLiveStreamingMenuBarButtonName.switchCameraButton,
-  ZegoLiveStreamingMenuBarButtonName.leaveButton,
 ];
-config.bottomMenuBar.maxCount = 4;
+config.bottomMenuBar.maxCount = 3;
 
 // Configuration pour l'audience
-config.bottomMenuBar.audienceButtons = [
-  ZegoLiveStreamingMenuBarButtonName.leaveButton,
-];
-config.bottomMenuBar.maxCount = 1;
+config.bottomMenuBar.audienceButtons = [];
+config.bottomMenuBar.maxCount = 0;
 ```
 
 #### B. Espacement pour les boutons
@@ -93,15 +90,14 @@ ZegoUIKitPrebuiltLiveStreamingConfig _getHostConfig() {
   config.topMenuBar.height = 0;
   
   // Barre du bas
-  config.bottomMenuBar.showInRoomMessageButton = false;
-  config.bottomMenuBar.hostButtons = [
-    ZegoLiveStreamingMenuBarButtonName.toggleMicrophoneButton,
-    ZegoLiveStreamingMenuBarButtonName.toggleCameraButton,
-    ZegoLiveStreamingMenuBarButtonName.switchCameraButton,
-    ZegoLiveStreamingMenuBarButtonName.leaveButton,
-  ];
-  config.bottomMenuBar.maxCount = 4;
-  config.bottomMenuBar.backgroundColor = Colors.black.withOpacity(0.3);
+config.bottomMenuBar.showInRoomMessageButton = false;
+config.bottomMenuBar.hostButtons = [
+  ZegoLiveStreamingMenuBarButtonName.toggleMicrophoneButton,
+  ZegoLiveStreamingMenuBarButtonName.toggleCameraButton,
+  ZegoLiveStreamingMenuBarButtonName.switchCameraButton,
+];
+config.bottomMenuBar.maxCount = 3;
+config.bottomMenuBar.backgroundColor = Colors.black.withOpacity(0.3);
   
   return config;
 }
@@ -134,10 +130,9 @@ Boutons supportés pour le host :
 - `toggleMicrophoneButton` - Activer/désactiver le microphone
 - `toggleCameraButton` - Activer/désactiver la caméra
 - `switchCameraButton` - Changer de caméra (avant/arrière)
-- `leaveButton` - Quitter le live
 
 Boutons supportés pour l'audience :
-- `leaveButton` - Quitter le live
+- Aucun bouton (interface clean)
 
 ### 7. Notes Importantes
 

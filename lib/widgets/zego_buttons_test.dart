@@ -47,15 +47,14 @@ class ZegoButtonsTest extends StatelessWidget {
     // Configuration de la barre du haut
     config.topMenuBar.showCloseButton = true;
 
-    // Configuration de la barre du bas - TOUS les boutons disponibles
+    // Configuration de la barre du bas - Boutons disponibles
     config.bottomMenuBar.showInRoomMessageButton = true;
     config.bottomMenuBar.hostButtons = [
       ZegoLiveStreamingMenuBarButtonName.toggleMicrophoneButton,
       ZegoLiveStreamingMenuBarButtonName.toggleCameraButton,
       ZegoLiveStreamingMenuBarButtonName.switchCameraButton,
-      ZegoLiveStreamingMenuBarButtonName.leaveButton,
     ];
-    config.bottomMenuBar.maxCount = 4;
+    config.bottomMenuBar.maxCount = 3;
 
     // Style des boutons
     config.bottomMenuBar.backgroundColor = Colors.black.withOpacity(0.5);
@@ -76,10 +75,8 @@ class ZegoButtonsTest extends StatelessWidget {
 
     // Configuration de la barre du bas
     config.bottomMenuBar.showInRoomMessageButton = true;
-    config.bottomMenuBar.audienceButtons = [
-      ZegoLiveStreamingMenuBarButtonName.leaveButton,
-    ];
-    config.bottomMenuBar.maxCount = 1;
+    config.bottomMenuBar.audienceButtons = [];
+    config.bottomMenuBar.maxCount = 0;
 
     // Style des boutons
     config.bottomMenuBar.backgroundColor = Colors.black.withOpacity(0.5);

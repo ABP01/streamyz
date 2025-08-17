@@ -230,12 +230,11 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
       ZegoLiveStreamingMenuBarButtonName.toggleMicrophoneButton,
       ZegoLiveStreamingMenuBarButtonName.toggleCameraButton,
       ZegoLiveStreamingMenuBarButtonName.switchCameraButton,
-      ZegoLiveStreamingMenuBarButtonName.leaveButton,
     ];
-    config.bottomMenuBar.maxCount = 4;
+    config.bottomMenuBar.maxCount = 3;
 
     // Configuration du style des boutons pour s'assurer qu'ils sont visibles
-    config.bottomMenuBar.backgroundColor = Colors.black.withOpacity(0.3);
+    config.bottomMenuBar.backgroundColor = Colors.black.withOpacity(0.7);
 
     // Interface personnalisée - s'assurer que les boutons ZegoUIKit restent visibles
     config.foreground = _buildCustomForeground();
@@ -274,13 +273,11 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     config.topMenuBar.margin = EdgeInsets.zero;
     // Configuration de la barre du bas pour l'audience
     config.bottomMenuBar.showInRoomMessageButton = false;
-    config.bottomMenuBar.audienceButtons = [
-      ZegoLiveStreamingMenuBarButtonName.leaveButton,
-    ];
-    config.bottomMenuBar.maxCount = 1;
+    config.bottomMenuBar.audienceButtons = [];
+    config.bottomMenuBar.maxCount = 0;
 
     // Configuration du style des boutons pour l'audience
-    config.bottomMenuBar.backgroundColor = Colors.black.withOpacity(0.3);
+    config.bottomMenuBar.backgroundColor = Colors.black.withOpacity(0.7);
     config.foreground = _buildCustomForeground();
     config.background = _buildCustomBackground();
     return config;
@@ -299,12 +296,12 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     return Stack(
       children: [
         // Interface TikTok complète (messages + chat en bas) - synchronisé avec Firestore
-        // Positionner en haut pour laisser de l'espace pour les boutons ZegoUIKit en bas
+        // Positionner pour laisser de l'espace pour les boutons ZegoUIKit
         Positioned(
           top: 0,
           left: 0,
           right: 0,
-          bottom: 80, // Laisser de l'espace pour les boutons ZegoUIKit
+          bottom: 0, // Laisser de l'espace pour les boutons ZegoUIKit
           child: TikTokLiveInterface(
             liveID: widget.liveID,
             userID: widget.userID,
