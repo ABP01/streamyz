@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../models/chat.dart';
 import '../utils/firestore_helper.dart';
+import 'heart_animation.dart';
 
 class TikTokLiveInterface extends StatefulWidget {
   final String liveID;
@@ -33,6 +34,9 @@ class _TikTokLiveInterfaceState extends State<TikTokLiveInterface>
   final Map<String, String> _userNames = {}; // Mappage ID -> Nom
   bool _showSendButton = false;
   Timer? _joinTimer;
+
+  // Animation des cœurs
+  final List<HeartAnimation> _heartAnimations = [];
 
   @override
   void initState() {
@@ -161,124 +165,172 @@ class _TikTokLiveInterfaceState extends State<TikTokLiveInterface>
     }
   }
 
+  // Envoyer un cœur quand on double-tape sur l'écran
+  Future<void> _sendHeart() async {
+    try {
+      final chatRef = FirebaseFirestore.instance.collection('chats').doc();
+      final chat = Chat(
+        liveId: widget.liveID,
+        idChat: chatRef.id,
+        idHost: widget.isHost ? widget.userID : '',
+        message: '❤️', // Emoji cœur
+        idUser: widget.userID,
+        time: DateTime.now(),
+      );
+
+      await chatRef.set(chat.toMap());
+      debugPrint('Cœur envoyé avec succès');
+    } catch (e) {
+      debugPrint('Erreur lors de l\'envoi du cœur: $e');
+    }
+  }
+
+  // Créer une animation de cœur à la position du double-tap
+  void _createHeartAnimation(Offset position) {
+    setState(() {
+      _heartAnimations.add(
+        HeartAnimation(
+          position: position,
+          onComplete: () {
+            setState(() {
+              _heartAnimations.removeAt(0);
+            });
+          },
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Messages qui défilent (style TikTok)
-        Positioned(
-          left: 16,
-          right: 16,
-          bottom:
-              MediaQuery.of(context).viewInsets.bottom +
-              140, // Plus d'espace pour le champ de saisie
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Notifications de connexion
-              ..._joinedUsers.map(
-                (username) => TikTokJoinNotification(
-                  key: ValueKey(username),
-                  username: username,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Messages de chat
-              ..._messages.map(
-                (chat) => TikTokScrollingMessage(
-                  key: ValueKey(chat.idChat),
-                  chat: chat,
-                  userName: _userNames[chat.idUser] ?? chat.idUser,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Interface de chat en bas (simplifiée)
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0, // Positionner en bas de l'écran disponible
-          child: Container(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-              left: 16,
-              right: 16,
-              top: 16,
-            ),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.2),
-                  Colors.black.withOpacity(0.4),
-                ],
-              ),
-            ),
-            child: Row(
+    return GestureDetector(
+      onDoubleTapDown: (details) {
+        // Créer l'animation de cœur à la position du double-tap
+        _createHeartAnimation(details.localPosition);
+        // Envoyer le cœur dans le chat
+        _sendHeart();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Stack(
+        children: [
+          // Messages qui défilent (style TikTok)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom:
+                MediaQuery.of(context).viewInsets.bottom +
+                140, // Plus d'espace pour le champ de saisie
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Champ de saisie (largeur réduite)
-                Container(
-                  width: 200, // Largeur fixe réduite
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: TextField(
-                    controller: _messageController,
-                    focusNode: _focusNode,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: 'Type your message...',
-                      hintStyle: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
-                        fontSize: 14,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                    ),
-                    onSubmitted: (_) => _sendMessage(),
+                // Notifications de connexion
+                ..._joinedUsers.map(
+                  (username) => TikTokJoinNotification(
+                    key: ValueKey(username),
+                    username: username,
                   ),
                 ),
 
-                // Bouton d'envoi (apparaît seulement avec focus)
-                if (_showSendButton) ...[
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: _sendMessage,
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFDCFF50),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.send,
-                        color: Colors.black,
-                        size: 20,
-                      ),
-                    ),
+                const SizedBox(height: 8),
+
+                // Messages de chat
+                ..._messages.map(
+                  (chat) => TikTokScrollingMessage(
+                    key: ValueKey(chat.idChat),
+                    chat: chat,
+                    userName: _userNames[chat.idUser] ?? chat.idUser,
                   ),
-                ],
+                ),
               ],
             ),
           ),
-        ),
-      ],
+
+          // Interface de chat en bas (simplifiée)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0, // Positionner en bas de l'écran disponible
+            child: Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                left: 16,
+                right: 16,
+                top: 16,
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.2),
+                    Colors.black.withOpacity(0.4),
+                  ],
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Champ de saisie (largeur réduite)
+                  Container(
+                    width: 200, // Largeur fixe réduite
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: TextField(
+                      controller: _messageController,
+                      focusNode: _focusNode,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Type your message...',
+                        hintStyle: TextStyle(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 14,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                      onSubmitted: (_) => _sendMessage(),
+                    ),
+                  ),
+
+                  // Bouton d'envoi (apparaît seulement avec focus)
+                  if (_showSendButton) ...[
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: _sendMessage,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFDCFF50),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.send,
+                          color: Colors.black,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+
+          // Animations des cœurs
+          ..._heartAnimations,
+        ],
+      ),
     );
   }
 
