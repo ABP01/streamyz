@@ -9,6 +9,7 @@ import 'package:streamyz/screens/start_live_screen.dart';
 import 'screens/main_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/zego_live_page.dart' as screens;
+import 'utils/network_manager.dart';
 import 'utils/online_status_manager.dart';
 import 'utils/permission_manager.dart';
 
@@ -16,8 +17,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
-  // Initialiser le gestionnaire de permissions dès le démarrage
+  // Initialiser les gestionnaires dès le démarrage
   await PermissionManager.initialize();
+  await NetworkManager().initialize();
 
   runApp(const MyApp());
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../models/chat.dart';
 import '../utils/firestore_helper.dart';
+import '../utils/network_manager.dart';
 import 'heart_animation.dart';
 
 class TikTokLiveInterface extends StatefulWidget {
@@ -34,6 +35,8 @@ class _TikTokLiveInterfaceState extends State<TikTokLiveInterface>
   final Map<String, String> _userNames = {}; // Mappage ID -> Nom
   bool _showSendButton = false;
   Timer? _joinTimer;
+  final NetworkManager _networkManager = NetworkManager();
+  bool _isNetworkError = false;
 
   // Animation des cœurs
   final List<HeartAnimation> _heartAnimations = [];
@@ -60,6 +63,11 @@ class _TikTokLiveInterfaceState extends State<TikTokLiveInterface>
   }
 
   void _listenToMessages() {
+    if (!_networkManager.isOperational) {
+      setState(() => _isNetworkError = true);
+      return;
+    }
+
     FirebaseFirestore.instance
         .collection('chats')
         .where('live_id', isEqualTo: widget.liveID)
@@ -140,48 +148,82 @@ class _TikTokLiveInterfaceState extends State<TikTokLiveInterface>
     final message = _messageController.text.trim();
     if (message.isEmpty) return;
 
-    try {
-      final chatRef = FirebaseFirestore.instance.collection('chats').doc();
-      final chat = Chat(
-        liveId: widget.liveID,
-        idChat: chatRef.id,
-        idHost: widget.isHost ? widget.userID : '',
-        message: message,
-        idUser: widget.userID, // Utiliser userID pour l'ID
-        time: DateTime.now(),
+    // Vérifier la connectivité avant d'envoyer
+    if (!_networkManager.isOperational) {
+      setState(() => _isNetworkError = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pas de connexion réseau'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
       );
+      return;
+    }
 
-      await chatRef.set(chat.toMap());
-      _messageController.clear();
-      _focusNode.unfocus();
+    try {
+      await _networkManager.executeWithRetry(() async {
+        final chatRef = FirebaseFirestore.instance.collection('chats').doc();
+        final chat = Chat(
+          liveId: widget.liveID,
+          idChat: chatRef.id,
+          idHost: widget.isHost ? widget.userID : '',
+          message: message,
+          idUser: widget.userID,
+          time: DateTime.now(),
+        );
 
-      setState(() {
-        _showSendButton = false;
+        await chatRef.set(chat.toMap());
       });
 
-      debugPrint('Message envoyé avec succès: ${chat.message}');
+      _messageController.clear();
+      _focusNode.unfocus();
+      setState(() {
+        _showSendButton = false;
+        _isNetworkError = false;
+      });
+
+      debugPrint('Message envoyé avec succès: $message');
     } catch (e) {
       debugPrint('Erreur lors de l\'envoi du message: $e');
+      setState(() => _isNetworkError = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur d\'envoi: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 
   // Envoyer un cœur quand on double-tape sur l'écran
   Future<void> _sendHeart() async {
-    try {
-      final chatRef = FirebaseFirestore.instance.collection('chats').doc();
-      final chat = Chat(
-        liveId: widget.liveID,
-        idChat: chatRef.id,
-        idHost: widget.isHost ? widget.userID : '',
-        message: '❤️', // Emoji cœur
-        idUser: widget.userID,
-        time: DateTime.now(),
-      );
+    if (!_networkManager.isOperational) {
+      setState(() => _isNetworkError = true);
+      return;
+    }
 
-      await chatRef.set(chat.toMap());
+    try {
+      await _networkManager.executeWithRetry(() async {
+        final chatRef = FirebaseFirestore.instance.collection('chats').doc();
+        final chat = Chat(
+          liveId: widget.liveID,
+          idChat: chatRef.id,
+          idHost: widget.isHost ? widget.userID : '',
+          message: '❤️', // Emoji cœur
+          idUser: widget.userID,
+          time: DateTime.now(),
+        );
+
+        await chatRef.set(chat.toMap());
+      });
+
+      setState(() => _isNetworkError = false);
       debugPrint('Cœur envoyé avec succès');
     } catch (e) {
       debugPrint('Erreur lors de l\'envoi du cœur: $e');
+      setState(() => _isNetworkError = true);
     }
   }
 
@@ -244,6 +286,47 @@ class _TikTokLiveInterfaceState extends State<TikTokLiveInterface>
               ],
             ),
           ),
+
+          // Indicateur d'erreur réseau
+          if (_isNetworkError)
+            Positioned(
+              top: 50,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.wifi_off, color: Colors.white, size: 16),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Problème de connexion',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() => _isNetworkError = false);
+                        _listenToMessages(); // Réessayer la connexion
+                      },
+                      child: const Icon(
+                        Icons.refresh,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
           // Interface de chat en bas (simplifiée)
           Positioned(
