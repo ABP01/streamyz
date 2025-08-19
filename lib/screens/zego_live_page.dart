@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:zego_uikit_prebuilt_live_streaming/zego_uikit_prebuilt_live_streaming.dart';
 
+import '../widgets/live_controls_widget.dart';
 import '../widgets/live_interactions_widget.dart';
 import '../widgets/live_overlay_widget.dart';
 import '../widgets/live_stats_widget.dart';
@@ -224,19 +225,15 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     config.topMenuBar.padding = EdgeInsets.zero;
     config.topMenuBar.margin = EdgeInsets.zero;
 
-    // Configuration de la barre du bas pour le host
+    // Masquer complètement la barre du bas de ZegoUIKit pour éviter les conflits
     config.bottomMenuBar.showInRoomMessageButton = false;
-    config.bottomMenuBar.hostButtons = [
-      ZegoLiveStreamingMenuBarButtonName.toggleMicrophoneButton,
-      ZegoLiveStreamingMenuBarButtonName.toggleCameraButton,
-      ZegoLiveStreamingMenuBarButtonName.switchCameraButton,
-    ];
-    config.bottomMenuBar.maxCount = 3;
+    config.bottomMenuBar.hostButtons = []; // Aucun bouton ZegoUIKit
+    config.bottomMenuBar.maxCount = 0;
+    config.bottomMenuBar.height = 0;
+    config.bottomMenuBar.padding = EdgeInsets.zero;
+    config.bottomMenuBar.margin = EdgeInsets.zero;
 
-    // Configuration du style des boutons pour s'assurer qu'ils sont visibles
-    config.bottomMenuBar.backgroundColor = Colors.black.withOpacity(0.7);
-
-    // Interface personnalisée - s'assurer que les boutons ZegoUIKit restent visibles
+    // Interface personnalisée - utiliser notre propre interface
     config.foreground = _buildCustomForeground();
     config.background = _buildCustomBackground();
 
@@ -296,12 +293,12 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
     return Stack(
       children: [
         // Interface TikTok complète (messages + chat en bas) - synchronisé avec Firestore
-        // Positionner pour laisser de l'espace pour les boutons ZegoUIKit
+        // Positionner pour laisser de l'espace pour nos contrôles personnalisés
         Positioned(
           top: 0,
           left: 0,
           right: 0,
-          bottom: 0, // Laisser de l'espace pour les boutons ZegoUIKit
+          bottom: 100, // Laisser de l'espace pour nos contrôles
           child: TikTokLiveInterface(
             liveID: widget.liveID,
             userID: widget.userID,
@@ -325,6 +322,13 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
 
         // Statistiques du live - en haut à droite
         LiveStatsWidget(liveID: widget.liveID),
+
+        // Contrôles personnalisés (remplace l'interface ZegoUIKit)
+        LiveControlsWidget(
+          isHost: widget.isHost,
+          onEndLive: _handleEndLive,
+          onInvite: _handleInvite,
+        ),
 
         // Indicateur de connexion offline (si nécessaire)
         if (_isOffline)
