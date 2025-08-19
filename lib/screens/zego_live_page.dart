@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:zego_uikit_prebuilt_live_streaming/zego_uikit_prebuilt_live_streaming.dart';
 
-import '../widgets/live_controls_widget.dart';
 import '../widgets/live_interactions_widget.dart';
 import '../widgets/live_overlay_widget.dart';
 import '../widgets/live_stats_widget.dart';
@@ -298,7 +297,7 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
           top: 0,
           left: 0,
           right: 0,
-          bottom: 100, // Laisser de l'espace pour nos contrôles
+        bottom:  100, // Laisser de l'espace pour nos contrôles
           child: TikTokLiveInterface(
             liveID: widget.liveID,
             userID: widget.userID,
@@ -323,12 +322,7 @@ class _ZegoLivePageState extends State<ZegoLivePage> {
         // Statistiques du live - en haut à droite
         LiveStatsWidget(liveID: widget.liveID),
 
-        // Contrôles personnalisés (remplace l'interface ZegoUIKit)
-        LiveControlsWidget(
-          isHost: widget.isHost,
-          onEndLive: _handleEndLive,
-          onInvite: _handleInvite,
-        ),
+        // Contrôles supprimés - interface simplifiée
 
         // Indicateur de connexion offline (si nécessaire)
         if (_isOffline)

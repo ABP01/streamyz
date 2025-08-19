@@ -30,40 +30,25 @@ config.bottomMenuBar.maxCount = 0;
 config.bottomMenuBar.height = 0;
 ```
 
-#### **🎛️ Contrôles personnalisés**
-- ✅ **Bouton caméra** : Allumer/éteindre la caméra
-- ✅ **Bouton microphone** : Allumer/éteindre le micro
-- ✅ **Bouton retourner** : Changer de caméra
-- ✅ **Bouton partager** : Inviter des spectateurs
-- ✅ **Bouton terminer** : Arrêter le live (host seulement)
-
 #### **📱 Interface TikTok optimisée**
 - ✅ **Messages** : Affichage des messages de chat
 - ✅ **Cœurs** : Animation des likes
 - ✅ **Chat** : Saisie de messages
-- ✅ **Espace réservé** : Place pour les contrôles
 
 ### **Utilisation de l'interface :**
 
 #### **🎥 Pour le Host (diffuseur) :**
 1. **Démarrage automatique** : Caméra et micro activés
-2. **Contrôles disponibles** :
-   - 📷 **Caméra** : Allumer/éteindre
-   - 🎤 **Microphone** : Allumer/éteindre
-   - 🔄 **Retourner** : Changer de caméra
-   - 📤 **Partager** : Inviter des spectateurs
-   - 🔴 **Terminer** : Arrêter le live
 
 #### **👥 Pour les spectateurs :**
-1. **Lecture automatique** : Pas de contrôles audio/vidéo
-2. **Contrôles disponibles** :
-   - 📤 **Partager** : Inviter d'autres spectateurs
+1. **Lecture automatique** : Interface de visualisation
+2. **Fonctionnalités disponibles** :
    - 💬 **Chat** : Envoyer des messages
    - ❤️ **Likes** : Double-tap pour envoyer des cœurs
 
 ### **Résolution des problèmes :**
 
-#### **Si les contrôles ne répondent pas :**
+#### **Si l'interface ne répond pas :**
 1. **Redémarrez l'application**
 2. **Vérifiez les permissions** : Caméra et microphone
 3. **Vérifiez la connexion** : Internet requis
@@ -81,7 +66,7 @@ config.bottomMenuBar.height = 0;
 ### **Indicateurs visuels :**
 
 #### **🟢 Interface normale :**
-- Contrôles visibles en bas
+- Interface visible et fonctionnelle
 - Messages de chat qui défilent
 - Indicateur de connectivité vert
 
@@ -99,7 +84,7 @@ config.bottomMenuBar.height = 0;
 - ✅ Testez votre caméra et microphone
 
 #### **Pendant le live :**
-- 🎥 Utilisez les contrôles en bas de l'écran
+- 🎥 Interface de diffusion active
 - 💬 Interagissez avec le chat
 - ❤️ Encouragez les likes et interactions
 - 📤 Partagez le lien pour inviter des spectateurs
